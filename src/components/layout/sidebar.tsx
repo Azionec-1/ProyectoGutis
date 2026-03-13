@@ -1,17 +1,22 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Building2, LayoutGrid, Package, Route, Users } from "lucide-react";
 
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutGrid, enabled: true },
   { href: "/clients", label: "Clientes", icon: Users, enabled: true },
-  { href: "#", label: "Ventas", icon: Building2, enabled: false },
+  { href: "/sales", label: "Ventas", icon: Building2, enabled: true },
   { href: "#", label: "Inventario", icon: Package, enabled: false },
   { href: "#", label: "Rutas", icon: Route, enabled: false }
 ];
 
 export function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="w-full rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm md:w-72">
+    <aside className="ui-panel w-full p-5 md:w-72">
       <div className="mb-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-700">
           Agua Gutis
@@ -43,7 +48,11 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                pathname === item.href
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+              }`}
             >
               <Icon className="h-4 w-4" />
               {item.label}

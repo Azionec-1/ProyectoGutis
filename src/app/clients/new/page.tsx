@@ -7,7 +7,7 @@ export default function NewClientPage() {
   return (
     <AppShell
       title="Nuevo cliente"
-      description="Registra la ficha base del cliente con direccion, referencia y enlace de mapa para el reparto."
+      description="Registra la ficha base del cliente con dirección, referencia y enlace de mapa para el reparto."
     >
       <Card>
         <ClientForm action={createClientAction} submitLabel="Guardar cliente" />

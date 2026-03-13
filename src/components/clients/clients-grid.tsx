@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin, Phone, UserCircle } from "lucide-react";
+import { toggleClientStatusAction } from "@/app/clients/actions";
 
 type ClientRow = Awaited<ReturnType<typeof import("@/lib/data/client-service").listClients>>[number];
 
@@ -51,7 +52,7 @@ export function ClientsGrid({ clients }: { clients: ClientRow[] }) {
                 className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
               >
                 <MapPin className="h-4 w-4" />
-                Ver ubicacion en Google Maps
+                Ver ubicación en Google Maps
               </a>
             </div>
           ) : null}
@@ -69,6 +70,20 @@ export function ClientsGrid({ clients }: { clients: ClientRow[] }) {
             >
               Ver ficha
             </Link>
+            <form action={toggleClientStatusAction} className="flex-1">
+              <input type="hidden" name="id" value={client.id} />
+              <input type="hidden" name="nextStatus" value={String(!client.isActive)} />
+              <button
+                type="submit"
+                className={`w-full rounded-lg px-3 py-2 text-sm transition ${
+                  client.isActive
+                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                }`}
+              >
+                {client.isActive ? "Desactivar" : "Activar"}
+              </button>
+            </form>
           </div>
         </div>
       ))}

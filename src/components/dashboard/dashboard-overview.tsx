@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Package, ShoppingCart, UserCheck, UserCircle2 } from "lucide-react";
+import { StatCard } from "@/components/ui/stat-card";
 
 type DashboardOverviewProps = {
   total: number;
@@ -47,54 +48,48 @@ export function DashboardOverview({
   ];
 
   const alerts = [
-    { message: "Ventas y movimientos aun no tienen datos conectados.", type: "warning" },
-    { message: "El dashboard actual refleja solo el modulo de clientes.", type: "info" },
-    { message: "Las siguientes vistas operativas quedaron marcadas como Proximamente.", type: "info" }
+    { message: "Ventas y movimientos aún no tienen datos conectados.", type: "warning" },
+    { message: "El dashboard actual refleja solo el módulo de clientes.", type: "info" },
+    { message: "Las siguientes vistas operativas quedaron marcadas como Próximamente.", type: "info" }
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {statsCards.map((stat) => {
-          const Icon = stat.icon;
-
-          return (
-            <div key={stat.title} className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stat.tone}`}>
-                  <Icon className="h-6 w-6" />
-                </div>
-                <span className="text-sm font-medium text-slate-500">{stat.change}</span>
-              </div>
-              <h3 className="text-sm text-slate-500">{stat.title}</h3>
-              <p className="mt-1 text-3xl font-bold text-slate-900">{stat.value}</p>
-            </div>
-          );
-        })}
+        {statsCards.map((stat) => (
+          <StatCard
+            key={stat.title}
+            label={stat.title}
+            value={stat.value}
+            hint={stat.change}
+            icon={stat.icon}
+            tone={stat.tone}
+          />
+        ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="ui-panel p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Ventas Semanales</h2>
-          <div className="flex h-[260px] items-center justify-center rounded-xl bg-slate-50 text-sm font-medium text-slate-500">
-            En produccion
+          <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
+            En producción
           </div>
         </div>
 
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Produccion Mensual</h2>
-          <div className="flex h-[260px] items-center justify-center rounded-xl bg-slate-50 text-sm font-medium text-slate-500">
-            En produccion
+        <div className="ui-panel p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Producción Mensual</h2>
+          <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
+            En producción
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="ui-panel p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Clientes Recientes</h2>
           <div className="space-y-4">
             {recent.map((client) => (
-              <div key={client.id} className="rounded-xl bg-slate-50 p-4">
+              <div key={client.id} className="ui-subtle-panel p-4">
                 <p className="font-medium text-slate-900">{client.fullName}</p>
                 <p className="mt-1 text-sm text-slate-500">{client.district}</p>
               </div>
@@ -102,19 +97,19 @@ export function DashboardOverview({
           </div>
         </div>
 
-        <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="ui-panel p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Entregas por Repartidor</h2>
-          <div className="flex h-[260px] items-center justify-center rounded-xl bg-slate-50 text-sm font-medium text-slate-500">
-            En produccion
+          <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
+            En producción
           </div>
         </div>
       </div>
 
-      <div className="rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="ui-panel p-6">
           <h2 className="mb-4 text-lg font-semibold text-slate-900">Alertas Recientes</h2>
           <div className="space-y-4">
             {alerts.map((alert, index) => (
-              <div key={index} className="flex items-start gap-3 rounded-xl bg-slate-50 p-4">
+              <div key={index} className="ui-subtle-panel flex items-start gap-3 p-4">
                 <AlertTriangle
                   className={`mt-0.5 h-5 w-5 ${
                     alert.type === "warning" ? "text-orange-500" : "text-blue-500"

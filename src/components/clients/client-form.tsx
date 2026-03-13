@@ -35,7 +35,7 @@ export function ClientForm({
     <form action={formAction} className="grid gap-5">
       <div className="grid gap-5 md:grid-cols-2">
         <div className="grid gap-2 text-sm font-medium text-slate-700">
-          <span>Codigo interno</span>
+          <span>Código interno</span>
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600">
             {defaults?.code ?? "Se generara automaticamente al guardar"}
           </div>
@@ -52,7 +52,7 @@ export function ClientForm({
           />
         </label>
         <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Telefono
+          Teléfono
           <input
             name="phone"
             defaultValue={defaults?.phone}
@@ -80,7 +80,7 @@ export function ClientForm({
       </div>
 
       <label className="grid gap-2 text-sm font-medium text-slate-700">
-        Direccion
+        Dirección
         <input
           name="address"
           defaultValue={defaults?.address}

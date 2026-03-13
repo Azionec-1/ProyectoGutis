@@ -36,75 +36,144 @@ async function hasClientTable() {
   }
 }
 
+function buildClientWhere(search?: string, status?: string) {
+  return {
+    AND: [
+      search
+        ? {
+            OR: [
+              { fullName: { contains: search } },
+              { code: { contains: search } },
+              { phone: { contains: search } },
+              { district: { contains: search } }
+            ]
+          }
+        : {},
+      status === "active" ? { isActive: true } : {},
+      status === "inactive" ? { isActive: false } : {}
+    ]
+  } satisfies Prisma.ClientWhereInput;
+}
+
+function filterDemoClients(search?: string, status?: string) {
+  const normalizedSearch = search?.toLowerCase();
+
+  return demoClients.filter((client) => {
+    const matchesSearch = normalizedSearch
+      ? [client.fullName, client.code, client.phone, client.district]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch)
+      : true;
+    const matchesStatus =
+      status === "active" ? client.isActive : status === "inactive" ? !client.isActive : true;
+
+    return matchesSearch && matchesStatus;
+  });
+}
+
+function getDemoClientMetrics() {
+  return {
+    total: demoClients.length,
+    active: demoClients.filter((client) => client.isActive).length,
+    inactive: demoClients.filter((client) => !client.isActive).length,
+    latest: [...demoClients]
+      .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
+      .slice(0, 3)
+      .map(({ id, fullName, district, createdAt }) => ({
+        id,
+        fullName,
+        district,
+        createdAt
+      }))
+  };
+}
+
 export async function listClients(search?: string, status?: string) {
   if (!(await hasClientTable())) {
-    return demoClients.filter((client) => {
-      const matchesSearch = search
-        ? [client.fullName, client.code, client.phone, client.district]
-            .join(" ")
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        : true;
-      const matchesStatus =
-        status === "active" ? client.isActive : status === "inactive" ? !client.isActive : true;
-
-      return matchesSearch && matchesStatus;
-    });
+    return filterDemoClients(search, status);
   }
 
   try {
     return await prisma.client.findMany({
-      where: {
-        AND: [
-          search
-            ? {
-                OR: [
-                  { fullName: { contains: search } },
-                  { code: { contains: search } },
-                  { phone: { contains: search } },
-                  { district: { contains: search } }
-                ]
-              }
-            : {},
-          status === "active" ? { isActive: true } : {},
-          status === "inactive" ? { isActive: false } : {}
-        ]
-      },
+      where: buildClientWhere(search, status),
       select: clientSelect,
       orderBy: [{ isActive: "desc" }, { createdAt: "desc" }]
     });
   } catch {
-    return demoClients.filter((client) => {
-      const matchesSearch = search
-        ? [client.fullName, client.code, client.phone, client.district]
-            .join(" ")
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        : true;
-      const matchesStatus =
-        status === "active" ? client.isActive : status === "inactive" ? !client.isActive : true;
+    return filterDemoClients(search, status);
+  }
+}
 
-      return matchesSearch && matchesStatus;
-    });
+export async function listClientsPaginated({
+  search,
+  status,
+  page = 1,
+  pageSize = 8
+}: {
+  search?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const safePage = Math.max(1, page);
+  const take = Math.max(1, pageSize);
+  const skip = (safePage - 1) * take;
+
+  if (!(await hasClientTable())) {
+    const filtered = filterDemoClients(search, status);
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / take));
+    const normalizedPage = Math.min(safePage, totalPages);
+    const start = (normalizedPage - 1) * take;
+
+    return {
+      items: filtered.slice(start, start + take),
+      total,
+      page: normalizedPage,
+      totalPages
+    };
+  }
+
+  try {
+    const where = buildClientWhere(search, status);
+
+    const [total, items] = await Promise.all([
+      prisma.client.count({ where }),
+      prisma.client.findMany({
+        where,
+        select: clientSelect,
+        orderBy: [{ isActive: "desc" }, { createdAt: "desc" }],
+        skip,
+        take
+      })
+    ]);
+
+    return {
+      items,
+      total,
+      page: safePage,
+      totalPages: Math.max(1, Math.ceil(total / take))
+    };
+  } catch {
+    const filtered = filterDemoClients(search, status);
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / take));
+    const normalizedPage = Math.min(safePage, totalPages);
+    const start = (normalizedPage - 1) * take;
+
+    return {
+      items: filtered.slice(start, start + take),
+      total,
+      page: normalizedPage,
+      totalPages
+    };
   }
 }
 
 export async function getClientMetrics() {
   if (!(await hasClientTable())) {
-    return {
-      total: demoClients.length,
-      active: demoClients.filter((client) => client.isActive).length,
-      inactive: demoClients.filter((client) => !client.isActive).length,
-      latest: [...demoClients]
-        .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
-        .slice(0, 3)
-        .map(({ id, fullName, district, createdAt }) => ({
-          id,
-          fullName,
-          district,
-          createdAt
-        }))
-    };
+    return getDemoClientMetrics();
   }
 
   try {
@@ -131,20 +200,7 @@ export async function getClientMetrics() {
       latest
     };
   } catch {
-    return {
-      total: demoClients.length,
-      active: demoClients.filter((client) => client.isActive).length,
-      inactive: demoClients.filter((client) => !client.isActive).length,
-      latest: [...demoClients]
-        .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
-        .slice(0, 3)
-        .map(({ id, fullName, district, createdAt }) => ({
-          id,
-          fullName,
-          district,
-          createdAt
-        }))
-    };
+    return getDemoClientMetrics();
   }
 }
 
@@ -234,6 +290,13 @@ export async function updateClient(id: string, input: ClientFormValues) {
       facadePhotoUrl: parsed.facadePhotoUrl || null,
       referenceNote: parsed.referenceNote || null
     }
+  });
+}
+
+export async function updateClientStatus(id: string, isActive: boolean) {
+  return prisma.client.update({
+    where: { id },
+    data: { isActive }
   });
 }
 

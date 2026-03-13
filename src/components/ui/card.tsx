@@ -9,7 +9,7 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <div className={cn("rounded-[20px] border border-slate-200 bg-white p-6 shadow-sm", className)}>
+    <div className={cn("ui-panel p-6", className)}>
       {children}
     </div>
   );

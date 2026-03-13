@@ -45,7 +45,7 @@ export default async function ClientDetailPage({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Telefono</p>
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Teléfono</p>
               <p className="mt-2 font-medium text-slate-800">{client.phone}</p>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4">
@@ -55,7 +55,7 @@ export default async function ClientDetailPage({
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Direccion</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Dirección</p>
             <p className="mt-2 text-sm leading-6 text-slate-600">{client.address}</p>
           </div>
 
@@ -103,7 +103,7 @@ export default async function ClientDetailPage({
               Historial reciente de ventas
             </p>
             <div className="mt-4 space-y-3">
-              <p className="text-sm text-slate-500">Aun no hay datos.</p>
+              <p className="text-sm text-slate-500">Aún no hay datos.</p>
             </div>
           </Card>
 
@@ -112,7 +112,7 @@ export default async function ClientDetailPage({
               Movimientos de inventario
             </p>
             <div className="mt-4 space-y-3">
-              <p className="text-sm text-slate-500">Aun no hay datos.</p>
+              <p className="text-sm text-slate-500">Aún no hay datos.</p>
             </div>
           </Card>
         </div>

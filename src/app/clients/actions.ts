@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
-import { createClient, updateClient } from "@/lib/data/client-service";
+import { createClient, updateClient, updateClientStatus } from "@/lib/data/client-service";
 
 type ActionState = {
   error?: string;
@@ -41,7 +41,7 @@ export async function createClientAction(_: ActionState, formData: FormData): Pr
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "El codigo interno ya existe." };
+      return { error: "El código interno ya existe." };
     }
 
     return { error: "No se pudo guardar el cliente." };
@@ -68,7 +68,7 @@ export async function updateClientAction(
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { error: "El codigo interno ya existe." };
+      return { error: "El código interno ya existe." };
     }
 
     return { error: "No se pudo actualizar el cliente." };
@@ -78,4 +78,23 @@ export async function updateClientAction(
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
   redirect(`/clients/${id}`);
+}
+
+export async function toggleClientStatusAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const nextStatus = String(formData.get("nextStatus") ?? "") === "true";
+
+  if (!id) {
+    return;
+  }
+
+  try {
+    await updateClientStatus(id, nextStatus);
+  } catch {
+    return;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/clients");
+  revalidatePath(`/clients/${id}`);
 }

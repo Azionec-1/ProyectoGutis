@@ -43,6 +43,31 @@ async function main() {
       create: client
     });
   }
+
+  const workers = [
+    {
+      fullName: "Juan Perez",
+      phone: "987111222",
+      documentId: "DOC-001",
+      vehicleNote: "Moto lineal",
+      isActive: true
+    },
+    {
+      fullName: "Maria Garcia",
+      phone: "987333444",
+      documentId: "DOC-002",
+      vehicleNote: "Motocar",
+      isActive: true
+    }
+  ];
+
+  for (const worker of workers) {
+    await prisma.worker.upsert({
+      where: { documentId: worker.documentId },
+      update: worker,
+      create: worker
+    });
+  }
 }
 
 main()
