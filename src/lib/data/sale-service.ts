@@ -13,6 +13,7 @@ const saleSelect = {
   totalAmount: true,
   notes: true,
   createdAt: true,
+
   client: {
     select: {
       id: true,
@@ -22,6 +23,7 @@ const saleSelect = {
       phone: true
     }
   },
+
   worker: {
     select: {
       id: true,
@@ -29,13 +31,19 @@ const saleSelect = {
       phone: true
     }
   },
+
   items: {
     select: {
       id: true,
-      itemName: true,
       quantity: true,
       unitPrice: true,
-      totalPrice: true
+      totalPrice: true,
+      product: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
     },
     orderBy: { createdAt: "asc" }
   }
@@ -56,7 +64,7 @@ export async function listSalesPaginated({
   const take = Math.max(1, pageSize);
   const skip = (safePage - 1) * take;
 
-  const where = {
+  const where: Prisma.SaleWhereInput = {
     AND: [
       search
         ? {
@@ -67,12 +75,15 @@ export async function listSalesPaginated({
             ]
           }
         : {},
-      status && status !== "all" ? { status: status as SaleStatus } : {}
+      status && status !== "all"
+        ? { status: status as SaleStatus }
+        : {}
     ]
-  } satisfies Prisma.SaleWhereInput;
+  };
 
   const [total, items] = await Promise.all([
     prisma.sale.count({ where }),
+
     prisma.sale.findMany({
       where,
       select: saleSelect,
@@ -120,7 +131,7 @@ export async function getSalesMetrics() {
 }
 
 export async function getSaleFormOptions() {
-  const [clients, workers] = await Promise.all([
+  const [clients, workers, products] = await Promise.all([
     prisma.client.findMany({
       where: { isActive: true },
       orderBy: { fullName: "asc" },
@@ -131,6 +142,7 @@ export async function getSaleFormOptions() {
         phone: true
       }
     }),
+
     prisma.worker.findMany({
       where: { isActive: true },
       orderBy: { fullName: "asc" },
@@ -138,18 +150,29 @@ export async function getSaleFormOptions() {
         id: true,
         fullName: true
       }
+    }),
+
+    prisma.product.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        price: true
+      }
     })
   ]);
 
-  return { clients, workers };
+  return { clients, workers, products };
 }
 
 export async function createSale(input: SaleFormValues) {
   const parsed = saleSchema.parse(input);
+
   const subtotal = parsed.items.reduce(
     (sum, item) => sum + item.quantity * item.unitPrice,
     0
   );
+
   const total = subtotal - parsed.discountAmount;
 
   return prisma.$transaction(async (tx) => {
@@ -168,9 +191,9 @@ export async function createSale(input: SaleFormValues) {
     });
 
     await tx.saleItem.createMany({
-      data: parsed.items.map((item) => ({
+      data: parsed.items.map((item: any) => ({
         saleId: sale.id,
-        itemName: item.itemName,
+        productId: item.productId,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.quantity * item.unitPrice

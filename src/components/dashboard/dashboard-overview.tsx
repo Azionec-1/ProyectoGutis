@@ -32,18 +32,11 @@ export function DashboardOverview({
       tone: "bg-green-100 text-green-600"
     },
     {
-      title: "Pendientes",
+      title: "Clientes Inactivos",
       value: inactive,
       change: "Por revisar",
       icon: Package,
       tone: "bg-orange-100 text-orange-600"
-    },
-    {
-      title: "Total General",
-      value: total,
-      change: "Base actual",
-      icon: ShoppingCart,
-      tone: "bg-slate-100 text-slate-600"
     }
   ];
 

@@ -7,6 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         UserRole @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
 model Client {
   id              String              @id @default(cuid())
   code            String              @unique
@@ -60,13 +75,14 @@ model Sale {
 model SaleItem {
   id         String   @id @default(cuid())
   saleId     String
-  itemName   String
+  productId  String
   quantity   Int
   unitPrice  Decimal
   totalPrice Decimal
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
 }
 
 model InventoryMovement {
@@ -83,6 +99,27 @@ model InventoryMovement {
   client       Client?      @relation(fields: [clientId], references: [id])
   worker       Worker?      @relation(fields: [workerId], references: [id])
   sale         Sale?        @relation(fields: [saleId], references: [id])
+}
+
+model Product {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  price        Decimal
+  imageUrl     String?
+  categoryId   String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  category     MenuCategory @relation(fields: [categoryId], references: [id])
+  saleItems    SaleItem[]
+}
+
+model MenuCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
 }
 
 enum SaleStatus {

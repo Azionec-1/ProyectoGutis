@@ -27,32 +27,37 @@ const clientSelect = {
 async function hasClientTable() {
   try {
     const result = await prisma.$queryRaw<Array<{ name: string }>>`
-      SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'Client'
+      SELECT name FROM sqlite_master WHERE type='table' AND name='Client'
     `;
-
     return result.length > 0;
   } catch {
     return false;
   }
 }
 
-function buildClientWhere(search?: string, status?: string) {
-  return {
-    AND: [
-      search
-        ? {
-            OR: [
-              { fullName: { contains: search } },
-              { code: { contains: search } },
-              { phone: { contains: search } },
-              { district: { contains: search } }
-            ]
-          }
-        : {},
-      status === "active" ? { isActive: true } : {},
-      status === "inactive" ? { isActive: false } : {}
-    ]
-  } satisfies Prisma.ClientWhereInput;
+function buildClientWhere(search?: string, status?: string): Prisma.ClientWhereInput {
+  const filters: Prisma.ClientWhereInput[] = [];
+
+  if (search) {
+    filters.push({
+      OR: [
+        { fullName: { contains: search } },
+        { code: { contains: search } },
+        { phone: { contains: search } },
+        { district: { contains: search } }
+      ]
+    });
+  }
+
+  if (status === "active") {
+    filters.push({ isActive: true });
+  }
+
+  if (status === "inactive") {
+    filters.push({ isActive: false });
+  }
+
+  return filters.length ? { AND: filters } : {};
 }
 
 function filterDemoClients(search?: string, status?: string) {
@@ -65,8 +70,13 @@ function filterDemoClients(search?: string, status?: string) {
           .toLowerCase()
           .includes(normalizedSearch)
       : true;
+
     const matchesStatus =
-      status === "active" ? client.isActive : status === "inactive" ? !client.isActive : true;
+      status === "active"
+        ? client.isActive
+        : status === "inactive"
+        ? !client.isActive
+        : true;
 
     return matchesSearch && matchesStatus;
   });
@@ -75,16 +85,16 @@ function filterDemoClients(search?: string, status?: string) {
 function getDemoClientMetrics() {
   return {
     total: demoClients.length,
-    active: demoClients.filter((client) => client.isActive).length,
-    inactive: demoClients.filter((client) => !client.isActive).length,
+    active: demoClients.filter((c) => c.isActive).length,
+    inactive: demoClients.filter((c) => !c.isActive).length,
     latest: [...demoClients]
       .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
       .slice(0, 3)
-      .map(({ id, fullName, district, createdAt }) => ({
-        id,
-        fullName,
-        district,
-        createdAt
+      .map((c) => ({
+        id: c.id,
+        fullName: c.fullName,
+        district: c.district,
+        createdAt: c.createdAt
       }))
   };
 }
@@ -122,15 +132,16 @@ export async function listClientsPaginated({
 
   if (!(await hasClientTable())) {
     const filtered = filterDemoClients(search, status);
+
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / take));
-    const normalizedPage = Math.min(safePage, totalPages);
-    const start = (normalizedPage - 1) * take;
+    const currentPage = Math.min(safePage, totalPages);
+    const start = (currentPage - 1) * take;
 
     return {
       items: filtered.slice(start, start + take),
       total,
-      page: normalizedPage,
+      page: currentPage,
       totalPages
     };
   }
@@ -157,15 +168,16 @@ export async function listClientsPaginated({
     };
   } catch {
     const filtered = filterDemoClients(search, status);
+
     const total = filtered.length;
     const totalPages = Math.max(1, Math.ceil(total / take));
-    const normalizedPage = Math.min(safePage, totalPages);
-    const start = (normalizedPage - 1) * take;
+    const currentPage = Math.min(safePage, totalPages);
+    const start = (currentPage - 1) * take;
 
     return {
       items: filtered.slice(start, start + take),
       total,
-      page: normalizedPage,
+      page: currentPage,
       totalPages
     };
   }
@@ -193,12 +205,7 @@ export async function getClientMetrics() {
       })
     ]);
 
-    return {
-      total,
-      active,
-      inactive,
-      latest
-    };
+    return { total, active, inactive, latest };
   } catch {
     return getDemoClientMetrics();
   }
@@ -206,7 +213,7 @@ export async function getClientMetrics() {
 
 export async function getClientById(id: string) {
   if (!(await hasClientTable())) {
-    return demoClients.find((client) => client.id === id) ?? null;
+    return demoClients.find((c) => c.id === id) ?? null;
   }
 
   try {
@@ -239,14 +246,18 @@ export async function getClientById(id: string) {
       }
     });
   } catch {
-    return demoClients.find((client) => client.id === id) ?? null;
+    return demoClients.find((c) => c.id === id) ?? null;
   }
 }
 
 export async function getClientDashboardData() {
   const clients = await listClients();
+
   const recent = [...clients]
-    .sort((a, b) => Number(new Date(b.createdAt)) - Number(new Date(a.createdAt)))
+    .sort(
+      (a, b) =>
+        Number(new Date(b.createdAt)) - Number(new Date(a.createdAt))
+    )
     .slice(0, 4)
     .map((client) => ({
       id: client.id,
@@ -257,8 +268,8 @@ export async function getClientDashboardData() {
 
   return {
     total: clients.length,
-    active: clients.filter((client) => client.isActive).length,
-    inactive: clients.filter((client) => !client.isActive).length,
+    active: clients.filter((c) => c.isActive).length,
+    inactive: clients.filter((c) => !c.isActive).length,
     recent
   };
 }
@@ -312,7 +323,9 @@ async function getNextClientCode() {
     });
 
     const lastNumber = latestClient?.code.match(/(\d+)$/)?.[1];
-    const nextNumber = lastNumber ? Number(lastNumber) + 1 : (await prisma.client.count()) + 1;
+    const nextNumber = lastNumber
+      ? Number(lastNumber) + 1
+      : (await prisma.client.count()) + 1;
 
     return `CLI-${String(nextNumber).padStart(3, "0")}`;
   } catch {

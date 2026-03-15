@@ -1,19 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Building2, LayoutGrid, Package, Route, Users } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Building2, LayoutGrid, Package, Route, Users, Shield, LogOut } from "lucide-react";
 
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutGrid, enabled: true },
   { href: "/clients", label: "Clientes", icon: Users, enabled: true },
   { href: "/sales", label: "Ventas", icon: Building2, enabled: true },
-  { href: "#", label: "Inventario", icon: Package, enabled: false },
-  { href: "#", label: "Rutas", icon: Route, enabled: false }
+  { href: "#", label: "Créditos", icon: Route, enabled: false }
 ];
+
+const adminItems = [
+  { href: "/admin/products", label: "Productos", icon: Package, enabled: true },
+  { href: "/admin/categories", label: "Categorías", icon: Shield, enabled: true },
+]
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // ignore
+    } finally {
+      router.push('/login');
+    }
+  }
 
   return (
     <aside className="ui-panel w-full p-5 md:w-72">
@@ -60,6 +74,57 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="mt-8">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+          Admin
+        </p>
+        <nav className="space-y-2">
+          {adminItems.map((item) => {
+            const Icon = item.icon;
+
+            if (!item.enabled) {
+              return (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                  <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em]">
+                    Prox.
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  pathname === item.href
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="mt-8 border-t border-slate-200 pt-4">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-700"
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 }
