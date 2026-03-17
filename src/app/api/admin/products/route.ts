@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-
+import { prisma } from '@/lib/prisma';
 
 const productSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  price: z.number().positive('Price must be positive'),
-  imageUrl: z.string().url().optional(),
-  categoryId: z.string().min(1, 'Category is required'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  price: z.number().nonnegative('El precio no puede ser negativo'),
+  stock: z.number().int('La cantidad debe ser un número entero').nonnegative('La cantidad no puede ser negativa'),
 });
 
 export async function POST(req: Request) {
@@ -17,38 +14,37 @@ export async function POST(req: Request) {
     const parsed = productSchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ message: 'Invalid request body', errors: parsed.error.errors }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Datos inválidos', errors: parsed.error.errors },
+        { status: 400 }
+      );
     }
 
-    const { name, description, price, imageUrl, categoryId } = parsed.data;
+    const { name, price, stock } = parsed.data;
 
     const newProduct = await prisma.product.create({
       data: {
         name,
-        description,
         price,
-        imageUrl,
-        categoryId,
+        stock,
       },
     });
 
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
-    console.error('Error creating product:', error);
-    return NextResponse.json({ message: 'Error creating product' }, { status: 500 });
+    console.error('Error al crear el producto:', error);
+    return NextResponse.json({ message: 'Error al crear el producto' }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
-      include: {
-        category: true,
-      },
+      orderBy: { name: 'asc' },
     });
     return NextResponse.json(products);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return NextResponse.json({ message: 'Error fetching products' }, { status: 500 });
+    console.error('Error al obtener los productos:', error);
+    return NextResponse.json({ message: 'Error al obtener los productos' }, { status: 500 });
   }
 }

@@ -102,24 +102,27 @@ model InventoryMovement {
 }
 
 model Product {
-  id           String       @id @default(cuid())
-  name         String
-  description  String?
-  price        Decimal
-  imageUrl     String?
-  categoryId   String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  category     MenuCategory @relation(fields: [categoryId], references: [id])
-  saleItems    SaleItem[]
+  id             String          @id @default(cuid())
+  name           String
+  price          Decimal
+  stock          Int             @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  saleItems      SaleItem[]
+  productionLogs ProductionLog[]
 }
 
-model MenuCategory {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  products  Product[]
+model ProductionLog {
+  id         String   @id @default(cuid())
+  productId  String
+  quantity   Int
+  producedOn DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, producedOn])
+  @@index([producedOn])
 }
 
 enum SaleStatus {

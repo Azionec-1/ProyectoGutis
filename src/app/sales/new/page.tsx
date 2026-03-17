@@ -13,7 +13,12 @@ export default async function NewSalePage() {
       description="Registra una venta asociando cliente, repartidor, ítems y método de pago."
     >
       <Card>
-        <SaleForm action={createSaleAction} clients={options.clients} workers={options.workers} />
+        <SaleForm
+          action={createSaleAction}
+          clients={options.clients}
+          workers={options.workers}
+          products={options.products}
+        />
       </Card>
     </AppShell>
   );

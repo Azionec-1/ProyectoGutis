@@ -1,84 +1,87 @@
-
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-
+import { prisma } from '@/lib/prisma';
 
 const productSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional(),
-  price: z.number().positive('Price must be positive'),
-  imageUrl: z.string().url().optional(),
-  categoryId: z.string().min(1, 'Category is required'),
+  name: z.string().min(1, 'El nombre es obligatorio'),
+  price: z.number().nonnegative('El precio no puede ser negativo'),
+  stock: z.number().int('La cantidad debe ser un número entero').nonnegative('La cantidad no puede ser negativa'),
 });
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const product = await prisma.product.findUnique({
       where: { id },
-      include: {
-        category: true,
-      },
     });
 
     if (!product) {
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+      return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 });
     }
-    return NextResponse.json(product);
+
+    return NextResponse.json({
+      ...product,
+      price: Number(product.price),
+    });
   } catch (error) {
-    console.error('Error fetching product:', error);
-    return NextResponse.json({ message: 'Error fetching product' }, { status: 500 });
+    console.error('Error al obtener el producto:', error);
+    return NextResponse.json({ message: 'Error al obtener el producto' }, { status: 500 });
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const json = await req.json();
     const parsed = productSchema.safeParse(json);
 
     if (!parsed.success) {
-      return NextResponse.json({ message: 'Invalid request body', errors: parsed.error.errors }, { status: 400 });
+      return NextResponse.json(
+        { message: 'Datos inválidos', errors: parsed.error.errors },
+        { status: 400 }
+      );
     }
 
-    const { name, description, price, imageUrl, categoryId } = parsed.data;
+    const { name, price, stock } = parsed.data;
 
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
         name,
-        description,
         price,
-        imageUrl,
-        categoryId,
+        stock,
       },
     });
+
     return NextResponse.json(updatedProduct);
-  } catch (error: any) {
-    console.error('Error updating product:', error);
-    if (error.code === 'P2025') {
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+  } catch (error: unknown) {
+    console.error('Error al actualizar el producto:', error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 });
     }
-    return NextResponse.json({ message: 'Error updating product' }, { status: 500 });
+
+    return NextResponse.json({ message: 'Error al actualizar el producto' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await prisma.product.delete({
-      where: {
-        id: id,
-      },
+      where: { id },
     });
-    return NextResponse.json({ message: 'Product deleted successfully' }, { status: 200 });
-  } catch (error: any) {
-    console.error('Error deleting product:', error);
-    if (error.code === 'P2025') {
-      return NextResponse.json({ message: 'Product not found' }, { status: 404 });
+
+    return NextResponse.json({ message: 'Producto eliminado correctamente' }, { status: 200 });
+  } catch (error: unknown) {
+    console.error('Error al eliminar el producto:', error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return NextResponse.json({ message: 'Producto no encontrado' }, { status: 404 });
     }
-    return NextResponse.json({ message: 'Error deleting product' }, { status: 500 });
+
+    return NextResponse.json({ message: 'Error al eliminar el producto' }, { status: 500 });
   }
 }

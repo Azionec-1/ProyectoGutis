@@ -2,7 +2,7 @@ import { PaymentMethod, SaleStatus } from "@prisma/client";
 import { z } from "zod";
 
 const saleItemSchema = z.object({
-  itemName: z.string().min(2, "El nombre del item es obligatorio."),
+  productId: z.string().min(1, "Selecciona un producto."),
   quantity: z.number().int().positive("La cantidad debe ser mayor a cero."),
   unitPrice: z.number().min(0, "El precio unitario no puede ser negativo.")
 });
@@ -10,13 +10,13 @@ const saleItemSchema = z.object({
 export const saleSchema = z
   .object({
     clientId: z.string().min(1, "Selecciona un cliente."),
-    workerId: z.string().optional(),
+    workerId: z.string().min(1, "Selecciona un repartidor."),
     status: z.nativeEnum(SaleStatus),
     paymentMethod: z.nativeEnum(PaymentMethod),
     scheduledAt: z.date(),
     discountAmount: z.number().min(0, "El descuento no puede ser negativo."),
     notes: z.string().optional(),
-    items: z.array(saleItemSchema).min(1, "Agrega al menos un item.")
+    items: z.array(saleItemSchema).min(1, "Agrega al menos un ítem.")
   })
   .superRefine((values, context) => {
     const subtotal = values.items.reduce(

@@ -26,11 +26,15 @@ export async function POST(req: Request) {
     await setSessionCookie(user.id);
 
     return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-  } catch (err: any) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: err.errors.map(e => e.message).join(', ') }, { status: 400 });
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors.map((issue) => issue.message).join(', ') },
+        { status: 400 }
+      );
     }
-    console.error(err);
+
+    console.error(error);
     return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 });
   }
 }

@@ -25,13 +25,10 @@ export default async function SalesPage({
 
   return (
     <AppShell
-      title="Gestión de Ventas"
-      description="Registro de ventas por cliente, asignación de repartidor y detalle de ítems."
+      title="Gestión de ventas"
+      description="Registro de ventas por cliente, asignación de repartidor y salida de productos."
       action={
-        <Link
-          href="/sales/new"
-          className="ui-btn-primary"
-        >
+        <Link href="/sales/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
           Nueva venta
         </Link>
@@ -42,7 +39,7 @@ export default async function SalesPage({
         <div>
           <p className="text-sm font-semibold text-slate-900">Generar reporte de ventas</p>
           <p className="text-sm text-slate-500">
-            Exportacion de reporte consolidado por rango de fechas.
+            Exportación de reporte consolidado por rango de fechas.
           </p>
         </div>
         <button

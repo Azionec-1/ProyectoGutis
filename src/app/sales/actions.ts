@@ -1,9 +1,10 @@
 "use server";
 
-import { Prisma, SaleStatus, PaymentMethod } from "@prisma/client";
+import { PaymentMethod, Prisma, SaleStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
+import { findOrCreateQuickClient } from "@/lib/data/client-service";
 import { createSale, updateSaleStatus } from "@/lib/data/sale-service";
 
 type ActionState = {
@@ -12,7 +13,7 @@ type ActionState = {
 };
 
 function readItems(formData: FormData) {
-  const names = formData.getAll("itemName").map((value) => String(value ?? "").trim());
+  const productIds = formData.getAll("productId").map((value) => String(value ?? "").trim());
   const quantities = formData
     .getAll("itemQuantity")
     .map((value) => Number(String(value ?? "0")));
@@ -20,13 +21,13 @@ function readItems(formData: FormData) {
     .getAll("itemUnitPrice")
     .map((value) => Number(String(value ?? "0")));
 
-  return names
-    .map((itemName, index) => ({
-      itemName,
+  return productIds
+    .map((productId, index) => ({
+      productId,
       quantity: quantities[index] ?? 0,
       unitPrice: prices[index] ?? 0
     }))
-    .filter((item) => item.itemName.length > 0);
+    .filter((item) => item.productId.length > 0);
 }
 
 function parseDateTimeLocal(value: string) {
@@ -38,9 +39,21 @@ function parseDateTimeLocal(value: string) {
 
 export async function createSaleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   try {
+    let clientId = String(formData.get("clientId") ?? "");
+    const clientDraftName = String(formData.get("clientDraftName") ?? "").trim();
+
+    if (!clientId) {
+      if (!clientDraftName) {
+        return { error: "Selecciona un cliente o escribe el nombre para crearlo." };
+      }
+
+      const quickClient = await findOrCreateQuickClient(clientDraftName);
+      clientId = quickClient.id;
+    }
+
     await createSale({
-      clientId: String(formData.get("clientId") ?? ""),
-      workerId: String(formData.get("workerId") ?? "") || undefined,
+      clientId,
+      workerId: String(formData.get("workerId") ?? ""),
       status: String(formData.get("status") ?? SaleStatus.PENDIENTE) as SaleStatus,
       paymentMethod: String(
         formData.get("paymentMethod") ?? PaymentMethod.EFECTIVO
@@ -62,10 +75,17 @@ export async function createSaleAction(_: ActionState, formData: FormData): Prom
       return { error: "No se pudo guardar la venta por una restricción de datos." };
     }
 
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+
     return { error: "No se pudo registrar la venta." };
   }
 
   revalidatePath("/sales");
+  revalidatePath("/admin/products");
+  revalidatePath("/clients");
+  revalidatePath("/");
   redirect("/sales");
 }
 

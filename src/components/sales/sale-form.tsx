@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useActionState, useMemo, useState } from "react";
+import { Package, Plus, Trash2 } from "lucide-react";
 import { PAYMENT_METHOD_OPTIONS, SALE_STATUS_OPTIONS } from "@/lib/data/sale-service";
 import { currency } from "@/lib/utils";
 
@@ -12,14 +12,21 @@ type FormState = {
 
 type ItemRow = {
   id: string;
-  itemName: string;
+  productId: string;
   quantity: number;
   unitPrice: number;
 };
 
+type ProductOption = {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+};
+
 const createEmptyItem = (): ItemRow => ({
   id: crypto.randomUUID(),
-  itemName: "",
+  productId: "",
   quantity: 1,
   unitPrice: 0
 });
@@ -27,11 +34,13 @@ const createEmptyItem = (): ItemRow => ({
 export function SaleForm({
   action,
   clients,
-  workers
+  workers,
+  products
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   clients: Array<{ id: string; code: string; fullName: string; phone: string }>;
   workers: Array<{ id: string; fullName: string }>;
+  products: ProductOption[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [items, setItems] = useState<ItemRow[]>([createEmptyItem()]);
@@ -39,6 +48,11 @@ export function SaleForm({
   const [clientQuery, setClientQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [showClientResults, setShowClientResults] = useState(false);
+
+  const productsMap = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products]
+  );
 
   const normalizedQuery = clientQuery.trim().toLowerCase();
   const filteredClients = normalizedQuery
@@ -62,7 +76,9 @@ export function SaleForm({
   }
 
   function removeItem(id: string) {
-    setItems((current) => (current.length > 1 ? current.filter((item) => item.id !== id) : current));
+    setItems((current) =>
+      current.length > 1 ? current.filter((item) => item.id !== id) : current
+    );
   }
 
   return (
@@ -89,6 +105,7 @@ export function SaleForm({
             required
           />
           <input type="hidden" name="clientId" value={selectedClientId} required />
+          <input type="hidden" name="clientDraftName" value={clientQuery.trim()} />
           {showClientResults ? (
             <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white">
               {filteredClients.length ? (
@@ -116,17 +133,19 @@ export function SaleForm({
             </div>
           ) : null}
           <span className="text-xs font-normal text-slate-500">
-            Selecciona un cliente de la lista filtrada para registrar la venta.
+            Si no existe, escribe el nombre y se creará automáticamente como cliente pendiente.
           </span>
         </div>
 
-          <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Repartidor (En desarrollo)
+        <label className="grid gap-2 text-sm font-medium text-slate-700">
+          Repartidor
           <select
             name="workerId"
+            defaultValue=""
             className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            required
           >
-            <option value="">Sin asignar</option>
+            <option value="">Selecciona un repartidor</option>
             {workers.map((worker) => (
               <option key={worker.id} value={worker.id}>
                 {worker.fullName}
@@ -134,7 +153,7 @@ export function SaleForm({
             ))}
           </select>
           <span className="text-xs font-normal text-slate-500">
-            La asignación final se integrará con el módulo de repartidores.
+            Este repartidor quedará asignado a la venta registrada.
           </span>
         </label>
 
@@ -205,9 +224,9 @@ export function SaleForm({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-slate-800">Items de venta (En desarrollo)</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Ítems de venta</h3>
             <p className="text-xs text-slate-500">
-              Este bloque se conectará con inventario cuando el módulo esté disponible.
+              El precio se completa automáticamente según el producto y la cantidad se descuenta del stock disponible.
             </p>
           </div>
           <button
@@ -216,59 +235,103 @@ export function SaleForm({
             className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
           >
             <Plus className="h-4 w-4" />
-            Agregar item
+            Agregar ítem
           </button>
         </div>
 
-        {items.map((item) => (
-          <div key={item.id} className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1.6fr_0.6fr_0.8fr_auto]">
-            <input
-              name="itemName"
-              value={item.itemName}
-              onChange={(event) => updateItem(item.id, { itemName: event.target.value })}
-              placeholder="Nombre del item"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              required
-            />
-            <input
-              name="itemQuantity"
-              type="number"
-              min={1}
-              step={1}
-              value={item.quantity}
-              onChange={(event) =>
-                updateItem(item.id, { quantity: Number(event.target.value) || 1 })
-              }
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              required
-            />
-            <input
-              name="itemUnitPrice"
-              type="number"
-              min={0}
-              step="0.01"
-              value={item.unitPrice}
-              onChange={(event) =>
-                updateItem(item.id, { unitPrice: Number(event.target.value) || 0 })
-              }
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => removeItem(item.id)}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-500 hover:bg-slate-100"
-              aria-label="Eliminar item"
+        {items.map((item) => {
+          const selectedProduct = item.productId ? productsMap.get(item.productId) : null;
+
+          return (
+            <div
+              key={item.id}
+              className="rounded-lg border border-slate-200 bg-slate-50 p-3"
             >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
+              <div className="grid gap-3 md:grid-cols-[1.5fr_0.6fr_0.7fr_auto]">
+                <div className="grid gap-1">
+                  <select
+                    name="productId"
+                    value={item.productId}
+                    onChange={(event) => {
+                      const product = productsMap.get(event.target.value);
+                      updateItem(item.id, {
+                        productId: event.target.value,
+                        unitPrice: product?.price ?? 0
+                      });
+                    }}
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    required
+                  >
+                    <option value="">Selecciona un producto</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Package className="h-3.5 w-3.5" />
+                    Disponible: {selectedProduct?.stock ?? 0}
+                  </div>
+                </div>
+
+                <label className="grid gap-1 text-xs font-medium text-slate-500">
+                  Cantidad
+                  <input
+                    name="itemQuantity"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={item.quantity}
+                    onChange={(event) =>
+                      updateItem(item.id, { quantity: Number(event.target.value) || 1 })
+                    }
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    required
+                  />
+                </label>
+
+                <label className="grid gap-1 text-xs font-medium text-slate-500">
+                  Precio
+                  <input
+                    name="itemUnitPrice"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={item.unitPrice}
+                    readOnly
+                    className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-900 outline-none"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  className="inline-flex items-center justify-center self-end rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-500 hover:bg-slate-100"
+                  aria-label="Eliminar ítem"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-3 text-sm text-slate-600">
+                Total del ítem:{" "}
+                <span className="font-semibold text-slate-900">
+                  {currency(item.quantity * item.unitPrice)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-        <p>Subtotal: <span className="font-semibold">{currency(subtotal)}</span></p>
-        <p className="mt-1">Total: <span className="font-semibold text-slate-900">{currency(total)}</span></p>
+        <p>
+          Subtotal: <span className="font-semibold">{currency(subtotal)}</span>
+        </p>
+        <p className="mt-1">
+          Total: <span className="font-semibold text-slate-900">{currency(total)}</span>
+        </p>
       </div>
 
       {state.error ? (

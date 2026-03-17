@@ -289,6 +289,44 @@ export async function createClient(input: ClientFormValues) {
   });
 }
 
+export async function findOrCreateQuickClient(fullName: string) {
+  const normalizedName = fullName.trim();
+
+  if (!normalizedName) {
+    throw new Error("Escribe el nombre del cliente.");
+  }
+
+  const existingClient = await prisma.client.findFirst({
+    where: {
+      fullName: {
+        equals: normalizedName
+      }
+    },
+    select: { id: true }
+  });
+
+  if (existingClient) {
+    return existingClient;
+  }
+
+  const code = await getNextClientCode();
+
+  return prisma.client.create({
+    data: {
+      code,
+      fullName: normalizedName,
+      phone: "000000000",
+      address: "Pendiente de completar",
+      district: "Pendiente",
+      referenceNote: "Cliente creado rápidamente desde ventas.",
+      googleMapsUrl: null,
+      facadePhotoUrl: null,
+      isActive: true
+    },
+    select: { id: true }
+  });
+}
+
 export async function updateClient(id: string, input: ClientFormValues) {
   const parsed = clientSchema.parse(input);
 

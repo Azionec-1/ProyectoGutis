@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Package, ShoppingCart, UserCheck, UserCircle2 } from "lucide-react";
+import { AlertTriangle, Package, UserCheck, UserCircle2 } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 
 type DashboardOverviewProps = {
@@ -99,19 +99,19 @@ export function DashboardOverview({
       </div>
 
       <div className="ui-panel p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Alertas Recientes</h2>
-          <div className="space-y-4">
-            {alerts.map((alert, index) => (
-              <div key={index} className="ui-subtle-panel flex items-start gap-3 p-4">
-                <AlertTriangle
-                  className={`mt-0.5 h-5 w-5 ${
-                    alert.type === "warning" ? "text-orange-500" : "text-blue-500"
-                  }`}
-                />
-                <p className="text-sm text-slate-700">{alert.message}</p>
-              </div>
-            ))}
-          </div>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Alertas Recientes</h2>
+        <div className="space-y-4">
+          {alerts.map((alert, index) => (
+            <div key={index} className="ui-subtle-panel flex items-start gap-3 p-4">
+              <AlertTriangle
+                className={`mt-0.5 h-5 w-5 ${
+                  alert.type === "warning" ? "text-orange-500" : "text-blue-500"
+                }`}
+              />
+              <p className="text-sm text-slate-700">{alert.message}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

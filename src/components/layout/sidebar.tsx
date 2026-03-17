@@ -2,30 +2,30 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, LayoutGrid, Package, Route, Users, Shield, LogOut } from "lucide-react";
+import { Building2, LayoutGrid, LogOut, Package, Route, Truck, Users } from "lucide-react";
 
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutGrid, enabled: true },
   { href: "/clients", label: "Clientes", icon: Users, enabled: true },
+  { href: "/workers", label: "Repartidores", icon: Truck, enabled: true },
   { href: "/sales", label: "Ventas", icon: Building2, enabled: true },
   { href: "#", label: "Créditos", icon: Route, enabled: false }
 ];
 
 const adminItems = [
-  { href: "/admin/products", label: "Productos", icon: Package, enabled: true },
-  { href: "/admin/categories", label: "Categorías", icon: Shield, enabled: true },
-]
+  { href: "/admin/products", label: "Productos", icon: Package, enabled: true }
+];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+
   async function handleLogout() {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (e) {
-      // ignore
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
     } finally {
-      router.push('/login');
+      router.push("/login");
     }
   }
 
