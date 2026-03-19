@@ -146,3 +146,14 @@ enum MovementType {
   DEVOLUCION_ENTRADA
   AJUSTE
 }
+
+model ReportTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  metadata  Json?
+}
+

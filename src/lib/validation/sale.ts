@@ -3,8 +3,8 @@ import { z } from "zod";
 
 const saleItemSchema = z.object({
   productId: z.string().min(1, "Selecciona un producto."),
-  quantity: z.number().int().positive("La cantidad debe ser mayor a cero."),
-  unitPrice: z.number().min(0, "El precio unitario no puede ser negativo.")
+  quantity: z.coerce.number().int().positive("La cantidad debe ser mayor a cero."),
+  unitPrice: z.coerce.number().min(0, "El precio unitario no puede ser negativo.")
 });
 
 export const saleSchema = z
@@ -14,7 +14,7 @@ export const saleSchema = z
     status: z.nativeEnum(SaleStatus),
     paymentMethod: z.nativeEnum(PaymentMethod),
     scheduledAt: z.date(),
-    discountAmount: z.number().min(0, "El descuento no puede ser negativo."),
+    discountAmount: z.coerce.number().min(0, "El descuento no puede ser negativo."),
     notes: z.string().optional(),
     items: z.array(saleItemSchema).min(1, "Agrega al menos un ítem.")
   })

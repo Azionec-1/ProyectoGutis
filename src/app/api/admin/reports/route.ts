@@ -11,11 +11,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ message: 'Missing required fields: startDate, endDate' }, { status: 400 });
     }
 
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Make the end date inclusive (include the full day)
+    end.setHours(23, 59, 59, 999);
+
     const sales = await prisma.sale.findMany({
       where: {
         createdAt: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
+          gte: start,
+          lte: end,
         },
       },
       include: {

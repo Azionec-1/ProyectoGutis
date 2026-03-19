@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, LayoutGrid, LogOut, Package, Route, Truck, Users } from "lucide-react";
+import { BarChart, Building2, LayoutGrid, LogOut, Package, Route, Truck, Users } from "lucide-react";
 
 const items = [
   { href: "/", label: "Dashboard", icon: LayoutGrid, enabled: true },
@@ -13,7 +13,8 @@ const items = [
 ];
 
 const adminItems = [
-  { href: "/admin/products", label: "Productos", icon: Package, enabled: true }
+  { href: "/admin/products", label: "Productos", icon: Package, enabled: true },
+  { href: "/admin/reports", label: "Reportes", icon: BarChart, enabled: true }
 ];
 
 export function Sidebar() {

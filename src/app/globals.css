@@ -61,4 +61,20 @@ a {
   .ui-label {
     @apply grid gap-2 text-sm font-medium text-slate-700;
   }
+
+  /* Hide weekday labels in the Tremor DateRangePicker calendar to keep the popup clean */
+  .tremor-DateRangePicker-head_row {
+    display: none;
+  }
+
+  .headlessui-popover-panel {
+    z-index: 9999;
+  }
+
+  .tremor-DateRangePicker .headlessui-popover-panel {
+    background: #ffffff !important;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+    border-radius: 16px;
+    padding: 0.5rem;
+  }
 }

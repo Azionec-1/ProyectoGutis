@@ -5,8 +5,8 @@ import { prisma } from '@/lib/prisma';
 
 const productSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
-  price: z.number().nonnegative('El precio no puede ser negativo'),
-  stock: z.number().int('La cantidad debe ser un número entero').nonnegative('La cantidad no puede ser negativa'),
+  price: z.coerce.number().nonnegative('El precio no puede ser negativo'),
+  stock: z.coerce.number().int('La cantidad debe ser un número entero').nonnegative('La cantidad no puede ser negativa'),
 });
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
