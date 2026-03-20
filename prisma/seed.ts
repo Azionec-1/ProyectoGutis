@@ -1,8 +1,31 @@
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  const adminPasswordHash = await bcrypt.hash("321nimda", 10);
+
+  await prisma.user.upsert({
+    where: { email: "aguagutis12@gmail.com" },
+    update: {
+      name: "Administrador Agua Gutis",
+      role: "ADMIN",
+      isApproved: true,
+      approvedAt: new Date(),
+      passwordHash: adminPasswordHash,
+      workerId: null
+    },
+    create: {
+      email: "aguagutis12@gmail.com",
+      passwordHash: adminPasswordHash,
+      name: "Administrador Agua Gutis",
+      role: "ADMIN",
+      isApproved: true,
+      approvedAt: new Date()
+    }
+  });
+
   const clients = [
     {
       code: "CLI-001",
@@ -69,9 +92,6 @@ async function main() {
     });
   }
 
-  /**
-   * Products + sample sales (to populate the system for reports)
-   */
   const products = [
     {
       id: "PROD-001",
@@ -101,7 +121,6 @@ async function main() {
     });
   }
 
-  // Create a few sample sales so reports show data.
   const client1 = await prisma.client.findUnique({ where: { code: "CLI-001" } });
   const client2 = await prisma.client.findUnique({ where: { code: "CLI-002" } });
   const worker1 = await prisma.worker.findUnique({ where: { documentId: "DOC-001" } });

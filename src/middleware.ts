@@ -23,23 +23,23 @@ function isPublicPath(pathname: string) {
 function toBase64(base64url: string) {
   const normalized = base64url.replace(/-/g, "+").replace(/_/g, "/");
   const padding = normalized.length % 4;
-
-  if (padding === 0) {
-    return normalized;
-  }
-
-  return normalized.padEnd(normalized.length + (4 - padding), "=");
+  return padding === 0 ? normalized : normalized.padEnd(normalized.length + (4 - padding), "=");
 }
 
 function decodeBase64(base64: string) {
   return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 }
 
+type SessionPayload = {
+  exp?: number;
+  role?: "ADMIN" | "WORKER" | "USER";
+};
+
 async function verifyHs256Token(token: string) {
   const parts = token.split(".");
 
   if (parts.length !== 3) {
-    return false;
+    return null;
   }
 
   const [header, payload, signature] = parts;
@@ -49,30 +49,30 @@ async function verifyHs256Token(token: string) {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(JWT_SECRET),
-    {
-      name: "HMAC",
-      hash: "SHA-256"
-    },
+    { name: "HMAC", hash: "SHA-256" },
     false,
     ["verify"]
   );
 
   const isValid = await crypto.subtle.verify("HMAC", key, signatureBytes, data);
-
   if (!isValid) {
-    return false;
+    return null;
   }
 
   const payloadBytes = decodeBase64(toBase64(payload));
-  const payloadJson = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
-    exp?: number;
-  };
+  const payloadJson = JSON.parse(new TextDecoder().decode(payloadBytes)) as SessionPayload;
 
-  if (!payloadJson.exp) {
-    return false;
+  if (!payloadJson.exp || payloadJson.exp * 1000 <= Date.now()) {
+    return null;
   }
 
-  return payloadJson.exp * 1000 > Date.now();
+  return payloadJson;
+}
+
+function redirectTo(pathname: string, req: NextRequest) {
+  const url = req.nextUrl.clone();
+  url.pathname = pathname;
+  return NextResponse.redirect(url);
 }
 
 export async function middleware(req: NextRequest) {
@@ -83,7 +83,6 @@ export async function middleware(req: NextRequest) {
   }
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
-
   if (!token) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
@@ -91,16 +90,27 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const isValid = await verifyHs256Token(token);
-
-  if (isValid) {
-    return NextResponse.next();
+  const payload = await verifyHs256Token(token);
+  if (!payload?.role) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("from", pathname);
+    return NextResponse.redirect(url);
   }
 
-  const url = req.nextUrl.clone();
-  url.pathname = "/login";
-  url.searchParams.set("from", pathname);
-  return NextResponse.redirect(url);
+  if (payload.role === "WORKER") {
+    if (pathname === "/my-orders" || pathname.startsWith("/api/auth")) {
+      return NextResponse.next();
+    }
+
+    return redirectTo("/my-orders", req);
+  }
+
+  if (pathname === "/my-orders") {
+    return redirectTo("/", req);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {

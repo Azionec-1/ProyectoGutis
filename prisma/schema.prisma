@@ -13,13 +13,18 @@ model User {
   passwordHash String
   name         String?
   role         UserRole @default(USER)
+  workerId     String?  @unique
+  isApproved   Boolean  @default(false)
+  approvedAt   DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  worker       Worker?  @relation(fields: [workerId], references: [id])
 }
 
 enum UserRole {
   USER
   ADMIN
+  WORKER
 }
 
 model Client {
@@ -50,6 +55,7 @@ model Worker {
   updatedAt       DateTime            @updatedAt
   sales           Sale[]
   inventoryEvents InventoryMovement[]
+  user            User?
 }
 
 model Sale {
@@ -157,4 +163,3 @@ model ReportTemplate {
   updatedAt DateTime @updatedAt
   metadata  Json?
 }
-
