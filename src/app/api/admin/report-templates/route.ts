@@ -7,11 +7,22 @@ const parseDate = (value?: unknown) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const buildPayload = (value: any) => ({
-  name: typeof value?.name === 'string' ? value.name.trim() : '',
-  startDate: parseDate(value?.startDate),
-  endDate: parseDate(value?.endDate),
-});
+const buildPayload = (value: unknown) => {
+  const payload =
+    value && typeof value === "object"
+      ? (value as {
+          name?: unknown;
+          startDate?: unknown;
+          endDate?: unknown;
+        })
+      : {};
+
+  return ({
+    name: typeof payload.name === "string" ? payload.name.trim() : "",
+    startDate: parseDate(payload.startDate),
+    endDate: parseDate(payload.endDate),
+  });
+};
 
 export async function GET() {
   const templates = await prisma.reportTemplate.findMany({

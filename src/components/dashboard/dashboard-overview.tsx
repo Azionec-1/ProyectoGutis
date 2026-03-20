@@ -18,21 +18,21 @@ export function DashboardOverview({
 }: DashboardOverviewProps) {
   const statsCards = [
     {
-      title: "Clientes Registrados",
+      title: "Clientes registrados",
       value: total,
       change: "Base actual",
       icon: UserCircle2,
       tone: "bg-blue-100 text-blue-600"
     },
     {
-      title: "Clientes Activos",
+      title: "Clientes activos",
       value: active,
       change: "Disponibles",
       icon: UserCheck,
       tone: "bg-green-100 text-green-600"
     },
     {
-      title: "Clientes Inactivos",
+      title: "Clientes inactivos",
       value: inactive,
       change: "Por revisar",
       icon: Package,
@@ -63,14 +63,14 @@ export function DashboardOverview({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="ui-panel p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Ventas Semanales</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Ventas semanales</h2>
           <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
             En producción
           </div>
         </div>
 
         <div className="ui-panel p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Producción Mensual</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Producción mensual</h2>
           <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
             En producción
           </div>
@@ -79,7 +79,7 @@ export function DashboardOverview({
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="ui-panel p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Clientes Recientes</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Clientes recientes</h2>
           <div className="space-y-4">
             {recent.map((client) => (
               <div key={client.id} className="ui-subtle-panel p-4">
@@ -91,7 +91,7 @@ export function DashboardOverview({
         </div>
 
         <div className="ui-panel p-6">
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Entregas por Repartidor</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Entregas por repartidor</h2>
           <div className="ui-subtle-panel flex h-[260px] items-center justify-center text-sm font-medium text-slate-500">
             En producción
           </div>
@@ -99,7 +99,7 @@ export function DashboardOverview({
       </div>
 
       <div className="ui-panel p-6">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Alertas Recientes</h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Alertas recientes</h2>
         <div className="space-y-4">
           {alerts.map((alert, index) => (
             <div key={index} className="ui-subtle-panel flex items-start gap-3 p-4">

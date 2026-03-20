@@ -1,107 +1,240 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+type PeriodType = "monthly" | "yearly";
+
+function getPeriodRange(periodType: PeriodType, year: number, month?: number) {
+  if (periodType === "monthly") {
+    const safeMonth = month && month >= 1 && month <= 12 ? month : new Date().getMonth() + 1;
+    const start = new Date(year, safeMonth - 1, 1, 0, 0, 0, 0);
+    const end = new Date(year, safeMonth, 0, 23, 59, 59, 999);
+
+    return {
+      start,
+      end,
+      label: `${start.toLocaleString("es-PE", { month: "long" })} ${year}`,
+      month: safeMonth
+    };
+  }
+
+  return {
+    start: new Date(year, 0, 1, 0, 0, 0, 0),
+    end: new Date(year, 11, 31, 23, 59, 59, 999),
+    label: `Año ${year}`
+  };
+}
+
+function buildMonthlyLabels(year: number, month: number) {
+  const lastDay = new Date(year, month, 0).getDate();
+  return Array.from({ length: lastDay }, (_, index) => String(index + 1).padStart(2, "0"));
+}
+
+function buildYearlyLabels() {
+  return ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+}
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
+    const periodType = searchParams.get("periodType") === "yearly" ? "yearly" : "monthly";
+    const currentYear = new Date().getFullYear();
+    const parsedYear = Number(searchParams.get("year"));
+    const year = Number.isInteger(parsedYear) && parsedYear > 2000 ? parsedYear : currentYear;
+    const parsedMonth = Number(searchParams.get("month"));
+    const month = Number.isInteger(parsedMonth) ? parsedMonth : undefined;
 
-    if (!startDate || !endDate) {
-      return NextResponse.json({ message: 'Missing required fields: startDate, endDate' }, { status: 400 });
-    }
+    const { start, end, label, month: safeMonth } = getPeriodRange(periodType, year, month);
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    // Make the end date inclusive (include the full day)
-    end.setHours(23, 59, 59, 999);
-
-    const sales = await prisma.sale.findMany({
-      where: {
-        createdAt: {
-          gte: start,
-          lte: end,
+    const [sales, products, workers] = await Promise.all([
+      prisma.sale.findMany({
+        where: {
+          createdAt: {
+            gte: start,
+            lte: end
+          }
         },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              }
+            }
           },
+          worker: {
+            select: {
+              fullName: true
+            }
+          }
+        }
+      }),
+      prisma.product.findMany({
+        orderBy: {
+          name: "asc"
         },
-        worker: true,
-      },
-    });
+        include: {
+          productionLogs: {
+            where: {
+              producedOn: {
+                gte: start,
+                lte: end
+              }
+            },
+            select: {
+              quantity: true,
+              producedOn: true
+            }
+          },
+          saleItems: {
+            where: {
+              sale: {
+                createdAt: {
+                  gte: start,
+                  lte: end
+                }
+              }
+            },
+            select: {
+              quantity: true,
+              totalPrice: true,
+              sale: {
+                select: {
+                  status: true
+                }
+              }
+            }
+          }
+        }
+      }),
+      prisma.worker.findMany({
+        orderBy: {
+          fullName: "asc"
+        },
+        select: {
+          fullName: true
+        }
+      })
+    ]);
 
-    // Process data for reports
-    const totalIncome = sales.reduce((acc, sale) => acc + Number(sale.totalAmount), 0);
-    const totalQuantity = sales.reduce(
-      (acc, sale) => acc + sale.items.reduce((pAcc, item) => pAcc + item.quantity, 0),
+    const totalIncome = sales.reduce((sum, sale) => sum + Number(sale.totalAmount), 0);
+    const totalQuantitySold = sales.reduce(
+      (sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
       0
     );
     const totalOrders = sales.length;
-    const uniqueClients = new Set(sales.map((sale) => sale.clientId).filter(Boolean)).size;
-    const averagePerOrder = totalOrders ? totalIncome / totalOrders : 0;
-    const cancelledSales = sales.filter((sale) => sale.status === 'CANCELADO').length;
-    const deliveredSales = sales.filter((sale) => sale.status === 'ENVIADO').length;
+    const deliveredSales = sales.filter((sale) => sale.status === "ENVIADO").length;
+    const cancelledSales = sales.filter((sale) => sale.status === "CANCELADO").length;
 
-    const salesByProduct = sales
-      .flatMap((sale) => sale.items)
-      .reduce((acc, saleItem) => {
-        const productName = saleItem.product.name;
-        if (!acc[productName]) {
-          acc[productName] = { total: 0, quantity: 0 };
-        }
-        acc[productName].total += Number(saleItem.totalPrice);
-        acc[productName].quantity += saleItem.quantity;
-        return acc;
-      }, {} as Record<string, { total: number; quantity: number }>);
+    const productPerformance = products.map((product) => {
+      const produced = product.productionLogs.reduce((sum, log) => sum + log.quantity, 0);
+      const sold = product.saleItems.reduce((sum, item) => sum + item.quantity, 0);
+      const income = product.saleItems.reduce((sum, item) => sum + Number(item.totalPrice), 0);
 
-    const salesByDelivery = sales.reduce((acc, sale) => {
-      const deliveryBy = sale.worker?.fullName || 'N/A';
-      if (!acc[deliveryBy]) {
-        acc[deliveryBy] = { total: 0, sales: 0 };
+      return {
+        productId: product.id,
+        name: product.name,
+        stock: product.stock,
+        produced,
+        sold,
+        income
+      };
+    });
+
+    const totalProduced = productPerformance.reduce((sum, product) => sum + product.produced, 0);
+
+    const workerMap = new Map<string, { workerName: string; totalIncome: number; sales: number }>();
+
+    workers.forEach((worker) => {
+      workerMap.set(worker.fullName, {
+        workerName: worker.fullName,
+        totalIncome: 0,
+        sales: 0
+      });
+    });
+
+    sales.forEach((sale) => {
+      const workerName = sale.worker?.fullName ?? "Sin asignar";
+      const current = workerMap.get(workerName) ?? {
+        workerName,
+        totalIncome: 0,
+        sales: 0
+      };
+
+      current.totalIncome += Number(sale.totalAmount);
+      current.sales += 1;
+      workerMap.set(workerName, current);
+    });
+
+    const salesByWorker = Array.from(workerMap.values()).filter(
+      (worker) => worker.sales > 0 || worker.workerName !== "Sin asignar"
+    );
+
+    const timelineLabels =
+      periodType === "monthly" && safeMonth
+        ? buildMonthlyLabels(year, safeMonth)
+        : buildYearlyLabels();
+
+    const salesTrendMap = new Map<string, { label: string; totalIncome: number; orders: number }>();
+    const productionTrendMap = new Map<string, { label: string; quantity: number }>();
+
+    timelineLabels.forEach((item) => {
+      salesTrendMap.set(item, { label: item, totalIncome: 0, orders: 0 });
+      productionTrendMap.set(item, { label: item, quantity: 0 });
+    });
+
+    sales.forEach((sale) => {
+      const key =
+        periodType === "monthly"
+          ? String(sale.createdAt.getDate()).padStart(2, "0")
+          : buildYearlyLabels()[sale.createdAt.getMonth()];
+
+      const current = salesTrendMap.get(key);
+      if (current) {
+        current.totalIncome += Number(sale.totalAmount);
+        current.orders += 1;
       }
-      acc[deliveryBy].total += Number(sale.totalAmount);
-      acc[deliveryBy].sales += 1;
-      return acc;
-    }, {} as Record<string, { total: number; sales: number }>);
+    });
 
-    const daily = Object.values(
-      sales.reduce((acc, sale) => {
-        const dateKey = sale.createdAt.toISOString().slice(0, 10);
-        const entry = acc[dateKey] ?? { date: dateKey, totalIncome: 0, orders: 0, clients: new Set<string>() };
-        entry.totalIncome += Number(sale.totalAmount);
-        entry.orders += 1;
-        if (sale.clientId) entry.clients.add(sale.clientId);
-        acc[dateKey] = entry;
-        return acc;
-      }, {} as Record<string, { date: string; totalIncome: number; orders: number; clients: Set<string> }>)
-    ).map((d) => ({
-      date: d.date,
-      totalIncome: d.totalIncome,
-      orders: d.orders,
-      uniqueClients: d.clients.size,
-      averageOrder: d.orders ? d.totalIncome / d.orders : 0,
-    }));
+    products.forEach((product) => {
+      product.productionLogs.forEach((log) => {
+        const key =
+          periodType === "monthly"
+            ? String(log.producedOn.getDate()).padStart(2, "0")
+            : buildYearlyLabels()[log.producedOn.getMonth()];
+
+        const current = productionTrendMap.get(key);
+        if (current) {
+          current.quantity += log.quantity;
+        }
+      });
+    });
 
     return NextResponse.json({
       summary: {
         totalIncome,
-        totalQuantity,
+        totalQuantitySold,
         totalOrders,
-        uniqueClients,
-        averagePerOrder,
-        cancelledSales,
         deliveredSales,
+        cancelledSales,
+        totalProduced,
+        activeProducts: products.length
       },
-      daily,
-      salesByProduct,
-      salesByDelivery,
+      period: {
+        type: periodType,
+        label,
+        month: safeMonth,
+        year
+      },
+      salesTrend: Array.from(salesTrendMap.values()),
+      productionTrend: Array.from(productionTrendMap.values()),
+      productPerformance,
+      salesByWorker
     });
   } catch (error) {
-    console.error('Error fetching reports:', error);
-    return NextResponse.json({ message: 'Error fetching reports' }, { status: 500 });
+    console.error("Error al generar reportes:", error);
+    return NextResponse.json({ message: "No se pudo generar el reporte." }, { status: 500 });
   }
 }

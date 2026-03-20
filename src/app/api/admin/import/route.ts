@@ -135,14 +135,25 @@ const buildTemplateFromSheet = (sheetName: string, rows: unknown[][], index: num
 };
 
 const upsertReportTemplate = async (payload: TemplatePayload) => {
-  await prisma.reportTemplate.upsert({
+  const existingTemplate = await prisma.reportTemplate.findFirst({
     where: { name: payload.name },
-    update: {
-      startDate: payload.startDate,
-      endDate: payload.endDate,
-      metadata: payload.metadata,
-    },
-    create: {
+    select: { id: true },
+  });
+
+  if (existingTemplate) {
+    await prisma.reportTemplate.update({
+      where: { id: existingTemplate.id },
+      data: {
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        metadata: payload.metadata,
+      },
+    });
+    return;
+  }
+
+  await prisma.reportTemplate.create({
+    data: {
       name: payload.name,
       startDate: payload.startDate,
       endDate: payload.endDate,

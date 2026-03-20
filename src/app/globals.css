@@ -55,11 +55,35 @@ a {
   }
 
   .ui-btn-soft {
-    @apply inline-flex items-center justify-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200;
   }
 
   .ui-label {
     @apply grid gap-2 text-sm font-medium text-slate-700;
+  }
+
+  .ui-pill {
+    @apply inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+  }
+
+  .ui-table-wrap {
+    @apply overflow-x-auto rounded-xl border border-slate-200 bg-white;
+  }
+
+  .ui-table {
+    @apply min-w-full divide-y divide-slate-200;
+  }
+
+  .ui-table thead {
+    @apply bg-slate-50;
+  }
+
+  .ui-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+  }
+
+  .ui-table td {
+    @apply px-4 py-3 text-sm text-slate-700;
   }
 
   /* Hide weekday labels in the Tremor DateRangePicker calendar to keep the popup clean */

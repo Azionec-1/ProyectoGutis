@@ -26,7 +26,7 @@ export default async function SalesPage({
   return (
     <AppShell
       title="Gestión de ventas"
-      description="Registro de ventas por cliente, asignación de repartidor y salida de productos."
+      description="Registra pedidos, asigna repartidor y controla la salida de productos desde un solo flujo."
       action={
         <Link href="/sales/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
@@ -35,11 +35,12 @@ export default async function SalesPage({
       }
     >
       <SalesStats {...metrics} />
-      <div className="ui-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+
+      <div className="ui-panel flex flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Generar reporte de ventas</p>
-          <p className="text-sm text-slate-500">
-            Exportación de reporte consolidado por rango de fechas.
+          <p className="text-sm font-semibold text-slate-900">Reporte consolidado de ventas</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Esta opción se conectará con exportaciones directas cuando el flujo quede cerrado.
           </p>
         </div>
         <button
@@ -50,7 +51,9 @@ export default async function SalesPage({
           Generar reporte de ventas (En producción)
         </button>
       </div>
+
       <SalesFilters search={search} status={status} />
+
       {salesResult.items.length ? (
         <>
           <SalesGrid sales={salesResult.items} />

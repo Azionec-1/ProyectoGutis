@@ -251,26 +251,16 @@ export async function getClientById(id: string) {
 }
 
 export async function getClientDashboardData() {
-  const clients = await listClients();
-
-  const recent = [...clients]
-    .sort(
-      (a, b) =>
-        Number(new Date(b.createdAt)) - Number(new Date(a.createdAt))
-    )
-    .slice(0, 4)
-    .map((client) => ({
-      id: client.id,
-      fullName: client.fullName,
-      district: client.district,
-      createdAt: new Date(client.createdAt)
-    }));
+  const metrics = await getClientMetrics();
 
   return {
-    total: clients.length,
-    active: clients.filter((c) => c.isActive).length,
-    inactive: clients.filter((c) => !c.isActive).length,
-    recent
+    total: metrics.total,
+    active: metrics.active,
+    inactive: metrics.inactive,
+    recent: metrics.latest.slice(0, 4).map((client) => ({
+      ...client,
+      createdAt: new Date(client.createdAt)
+    }))
   };
 }
 

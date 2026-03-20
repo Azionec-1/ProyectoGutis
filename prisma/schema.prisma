@@ -113,13 +113,14 @@ model Product {
 }
 
 model ProductionLog {
-  id         String   @id @default(cuid())
-  productId  String
-  quantity   Int
-  producedOn DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id                   String   @id @default(cuid())
+  productId            String
+  quantity             Int
+  lastRegisteredAmount Int      @default(0)
+  producedOn           DateTime
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, producedOn])
   @@index([producedOn])

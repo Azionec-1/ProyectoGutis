@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CalendarDays, CreditCard, MapPin, Package2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { updateSaleStatusAction } from "@/app/sales/actions";
 import { SaleStatusSelect } from "@/components/sales/sale-status-select";
@@ -11,38 +12,74 @@ export function SalesGrid({ sales }: { sales: SaleRow[] }) {
   return (
     <div className="grid gap-4">
       {sales.map((sale) => (
-        <div key={sale.id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {sale.client.code} - {sale.client.fullName}
-              </p>
-              <p className="text-sm text-slate-500">{sale.client.district}</p>
+        <article key={sale.id} className="ui-panel overflow-hidden p-0">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/70 px-5 py-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  {sale.client.code}
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-slate-900">{sale.client.fullName}</h3>
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {sale.client.district}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <Package2 className="h-4 w-4" />
+                    {sale.items.length} ítems
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Total</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-900">
+                    {currency(Number(sale.totalAmount))}
+                  </p>
+                </div>
+                <Badge active={sale.status !== "CANCELADO"}>{sale.status}</Badge>
+              </div>
             </div>
-            <Badge active={sale.status !== "CANCELADO"}>{sale.status}</Badge>
           </div>
 
-          <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-4">
-            <p>Programado: <span className="font-medium text-slate-900">{shortDate(sale.scheduledAt)}</span></p>
-            <p>Pago: <span className="font-medium text-slate-900">{sale.paymentMethod}</span></p>
-            <p>Items: <span className="font-medium text-slate-900">{sale.items.length}</span></p>
-            <p>Total: <span className="font-semibold text-slate-900">{currency(Number(sale.totalAmount))}</span></p>
-          </div>
+          <div className="grid gap-5 px-5 py-5 xl:grid-cols-[1fr_auto] xl:items-end">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="ui-subtle-panel px-4 py-3">
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Programado
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{shortDate(sale.scheduledAt)}</p>
+              </div>
 
-          <div className="mt-4 flex gap-2">
-            <Link
-              href={`/sales/${sale.id}`}
-              className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-            >
-              Ver detalle
-            </Link>
-            <SaleStatusSelect
-              saleId={sale.id}
-              defaultStatus={sale.status}
-              action={updateSaleStatusAction}
-            />
+              <div className="ui-subtle-panel px-4 py-3">
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  Pago
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{sale.paymentMethod}</p>
+              </div>
+
+              <div className="ui-subtle-panel px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Cliente</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{sale.client.phone}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link href={`/sales/${sale.id}`} className="ui-btn-soft">
+                Ver detalle
+              </Link>
+              <SaleStatusSelect
+                saleId={sale.id}
+                defaultStatus={sale.status}
+                action={updateSaleStatusAction}
+              />
+            </div>
           </div>
-        </div>
+        </article>
       ))}
     </div>
   );

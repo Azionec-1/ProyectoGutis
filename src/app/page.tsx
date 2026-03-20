@@ -12,10 +12,7 @@ export default async function HomePage() {
       title="Dashboard"
       description="Resumen operativo del sistema con enfoque actual en el módulo de clientes."
       action={
-        <Link
-          href="/clients/new"
-          className="ui-btn-primary"
-        >
+        <Link href="/clients/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
           Nuevo cliente
         </Link>
