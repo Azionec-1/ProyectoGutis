@@ -34,41 +34,44 @@ export function ClientForm({
   return (
     <form action={formAction} className="grid gap-5">
       <div className="grid gap-5 md:grid-cols-2">
-        <div className="grid gap-2 text-sm font-medium text-slate-700">
-          <span>Código interno</span>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-slate-600">
+        <div className="ui-label">
+          <span>Codigo interno</span>
+          <div className="ui-subtle-panel px-4 py-3 text-slate-600">
             {defaults?.code ?? "Se generara automaticamente al guardar"}
           </div>
           <input name="code" defaultValue={defaults?.code ?? ""} type="hidden" />
         </div>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
+
+        <label className="ui-label">
           Nombre completo o razon social
           <input
             name="fullName"
             defaultValue={defaults?.fullName}
             placeholder="Bodega San Martin"
-            className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="ui-input"
             required
           />
         </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
-          Teléfono
+
+        <label className="ui-label">
+          Telefono
           <input
             name="phone"
             defaultValue={defaults?.phone}
             placeholder="987654321"
-            className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="ui-input"
             required
           />
         </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
+
+        <label className="ui-label">
           Distrito o zona
           <input
             name="district"
             defaultValue={defaults?.district}
             list="trujillo-districts"
             placeholder="Selecciona o escribe un distrito"
-            className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="ui-input"
             required
           />
           <datalist id="trujillo-districts">
@@ -79,52 +82,53 @@ export function ClientForm({
         </label>
       </div>
 
-      <label className="grid gap-2 text-sm font-medium text-slate-700">
-        Dirección
+      <label className="ui-label">
+        Direccion
         <input
           name="address"
           defaultValue={defaults?.address}
           placeholder="Av. Los Laureles 125"
-          className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="ui-input"
           required
         />
       </label>
 
-      <label className="grid gap-2 text-sm font-medium text-slate-700">
+      <label className="ui-label">
         Referencia
         <textarea
           name="referenceNote"
           defaultValue={defaults?.referenceNote ?? ""}
           placeholder="Frente a la farmacia central"
           rows={3}
-          className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="ui-input min-h-28 resize-y"
         />
       </label>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
+        <label className="ui-label">
           URL de Google Maps
           <input
             name="googleMapsUrl"
             type="url"
             defaultValue={defaults?.googleMapsUrl ?? ""}
             placeholder="https://maps.google.com/..."
-            className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="ui-input"
           />
         </label>
-        <label className="grid gap-2 text-sm font-medium text-slate-700">
+
+        <label className="ui-label">
           URL de foto de fachada
           <input
             name="facadePhotoUrl"
             type="url"
             defaultValue={defaults?.facadePhotoUrl ?? ""}
             placeholder="https://..."
-            className="rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            className="ui-input"
           />
         </label>
       </div>
 
-      <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-700">
+      <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
         <input
           name="isActive"
           type="checkbox"
@@ -135,7 +139,7 @@ export function ClientForm({
       </label>
 
       {state.error ? (
-        <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-600">
           <p>{state.error}</p>
           {state.errors?.length ? (
             <ul className="mt-2 list-disc pl-5">
@@ -150,7 +154,7 @@ export function ClientForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-fit rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+        className="ui-btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? "Guardando..." : submitLabel}
       </button>

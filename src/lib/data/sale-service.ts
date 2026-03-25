@@ -208,16 +208,32 @@ export async function createSale(input: SaleFormValues) {
     });
 
     const productsMap = new Map(products.map((product) => [product.id, product]));
+    const requestedByProduct = new Map<string, number>();
+
+    parsed.items.forEach((item) => {
+      requestedByProduct.set(
+        item.productId,
+        (requestedByProduct.get(item.productId) ?? 0) + item.quantity
+      );
+    });
+
+    requestedByProduct.forEach((requestedQuantity, productId) => {
+      const product = productsMap.get(productId);
+
+      if (!product) {
+        throw new Error("Uno de los productos seleccionados no existe.");
+      }
+
+      if (requestedQuantity > product.stock) {
+        throw new Error(`No hay stock suficiente para ${product.name}. Disponible: ${product.stock}.`);
+      }
+    });
 
     const normalizedItems = parsed.items.map((item) => {
       const product = productsMap.get(item.productId);
 
       if (!product) {
         throw new Error("Uno de los productos seleccionados no existe.");
-      }
-
-      if (item.quantity > product.stock) {
-        throw new Error(`No hay stock suficiente para ${product.name}. Disponible: ${product.stock}.`);
       }
 
       const unitPrice = Number(product.price);
@@ -346,13 +362,28 @@ export async function updateSaleStatus(id: string, status: SaleStatus) {
     }
 
     if (sale.status === SaleStatus.CANCELADO && status !== SaleStatus.CANCELADO) {
-      for (const item of sale.items) {
-        if (item.quantity > item.product.stock) {
+      const requiredByProduct = new Map<
+        string,
+        { name: string; quantity: number; stock: number }
+      >();
+
+      sale.items.forEach((item) => {
+        const current = requiredByProduct.get(item.productId);
+
+        requiredByProduct.set(item.productId, {
+          name: item.product.name,
+          stock: item.product.stock,
+          quantity: (current?.quantity ?? 0) + item.quantity
+        });
+      });
+
+      requiredByProduct.forEach((item) => {
+        if (item.quantity > item.stock) {
           throw new Error(
-            `No hay stock suficiente para reactivar la venta de ${item.product.name}. Disponible: ${item.product.stock}.`
+            `No hay stock suficiente para reactivar la venta de ${item.name}. Disponible: ${item.stock}.`
           );
         }
-      }
+      });
 
       for (const item of sale.items) {
         await tx.product.update({

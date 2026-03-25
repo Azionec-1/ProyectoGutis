@@ -16,8 +16,13 @@ const PUBLIC_PATHS = [
   "/images"
 ];
 
+const PUBLIC_FILE_PATTERN = /\.(?:png|jpg|jpeg|webp|gif|svg|ico|css|js|map|txt|xml)$/i;
+
 function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return (
+    PUBLIC_FILE_PATTERN.test(pathname) ||
+    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
+  );
 }
 
 function toBase64(base64url: string) {

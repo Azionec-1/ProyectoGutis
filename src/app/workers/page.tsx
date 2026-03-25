@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, ShieldCheck, Truck, UserCheck, UserX, Clock3 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
+import { StatCard } from "@/components/ui/stat-card";
 import { prisma } from "@/lib/prisma";
 import { ApproveWorkerButton } from "@/components/workers/approve-worker-button";
 
@@ -27,7 +28,8 @@ export default async function WorkersPage() {
   return (
     <AppShell
       title="Repartidores"
-      description="Administra los repartidores, aprueba cuentas pendientes y define quién puede ingresar al sistema."
+      showTopSearch={false}
+      description="Administra el equipo de reparto, aprueba cuentas pendientes y controla quien entra al sistema operativo."
       action={
         <Link href="/workers/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
@@ -35,78 +37,65 @@ export default async function WorkersPage() {
         </Link>
       }
     >
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="ui-panel p-5">
-          <p className="text-sm text-slate-500">Total registrados</p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{workers.length}</p>
-        </div>
-        <div className="ui-panel p-5">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <UserCheck className="h-4 w-4 text-green-600" />
-            Activos
-          </div>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{active}</p>
-        </div>
-        <div className="ui-panel p-5">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <ShieldCheck className="h-4 w-4 text-blue-600" />
-            Con acceso
-          </div>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{withAccess}</p>
-        </div>
-        <div className="ui-panel p-5">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Clock3 className="h-4 w-4 text-amber-600" />
-            Pendientes
-          </div>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{pendingApproval}</p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total registrados" value={workers.length} hint="Base del equipo" icon={Truck} tone="bg-blue-100 text-blue-700" />
+        <StatCard label="Activos" value={active} hint="Disponibles para reparto" icon={UserCheck} tone="bg-emerald-100 text-emerald-700" />
+        <StatCard label="Con acceso" value={withAccess} hint="Usuarios creados" icon={ShieldCheck} tone="bg-sky-100 text-sky-700" />
+        <StatCard label="Pendientes" value={pendingApproval} hint="Esperan aprobacion" icon={Clock3} tone="bg-amber-100 text-amber-700" />
       </div>
 
-      <div className="ui-panel p-6">
-        <div className="space-y-4">
+      <section className="ui-panel overflow-hidden p-0">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-white via-white to-blue-50/60 px-5 py-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Equipo</p>
+              <h2 className="mt-2 text-lg font-semibold text-slate-900">Control del frente operativo</h2>
+            </div>
+            <span className="ui-pill">Despacho y acceso</span>
+          </div>
+        </div>
+
+        <div className="space-y-4 px-5 py-5">
           {workers.length ? (
             workers.map((worker) => {
               const accountLabel = !worker.user
                 ? "Sin acceso"
                 : worker.user.isApproved
                   ? "Aprobada"
-                  : "Esperando verificación";
+                  : "Esperando verificacion";
 
               return (
-                <div
+                <article
                   key={worker.id}
-                  className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 md:grid-cols-[1.1fr_0.8fr_0.8fr_1fr_auto]"
+                  className="grid gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 lg:grid-cols-[1.1fr_0.75fr_0.9fr_1fr_auto]"
                 >
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
-                        <Truck className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-lg font-semibold text-slate-900">{worker.fullName}</p>
-                        <p className="text-sm text-slate-500">Documento: {worker.documentId}</p>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+                      <Truck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-slate-900">{worker.fullName}</p>
+                      <p className="mt-1 text-sm text-slate-500">Documento: {worker.documentId}</p>
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-sm text-slate-500">Teléfono</p>
-                    <p className="mt-1 font-medium text-slate-900">{worker.phone}</p>
+                  <div className="ui-subtle-panel px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Telefono</p>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">{worker.phone}</p>
                   </div>
 
-                  <div>
-                    <p className="text-sm text-slate-500">Estado operativo</p>
-                    <p className={`mt-1 font-medium ${worker.isActive ? "text-green-600" : "text-rose-600"}`}>
+                  <div className="ui-subtle-panel px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Estado operativo</p>
+                    <p className={`mt-2 text-sm font-semibold ${worker.isActive ? "text-emerald-600" : "text-rose-600"}`}>
                       {worker.isActive ? "Activo" : "Inactivo"}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">{worker.vehicleNote || "Sin detalle de vehículo"}</p>
+                    <p className="mt-1 text-sm text-slate-500">{worker.vehicleNote || "Sin detalle de vehiculo"}</p>
                   </div>
 
-                  <div>
-                    <p className="text-sm text-slate-500">Cuenta</p>
+                  <div className="ui-subtle-panel px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Cuenta</p>
                     <p
-                      className={`mt-1 font-medium ${
+                      className={`mt-2 text-sm font-semibold ${
                         !worker.user
                           ? "text-slate-500"
                           : worker.user.isApproved
@@ -119,29 +108,29 @@ export default async function WorkersPage() {
                     <p className="mt-1 text-sm text-slate-500">{worker.user?.email ?? "No configurado"}</p>
                   </div>
 
-                  <div className="flex flex-col items-end justify-between gap-3">
+                  <div className="flex flex-col items-stretch gap-2 lg:items-end">
                     {worker.user && !worker.user.isApproved ? <ApproveWorkerButton workerId={worker.id} /> : null}
                     <Link href={`/workers/${worker.id}/edit`} className="ui-btn-soft">
                       Editar
                     </Link>
                   </div>
-                </div>
+                </article>
               );
             })
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-              Aún no hay repartidores registrados.
+              Aun no hay repartidores registrados.
             </div>
           )}
-        </div>
 
-        {inactive > 0 ? (
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-            <UserX className="mr-2 inline h-4 w-4 text-rose-500" />
-            Hay repartidores inactivos que no podrán recibir pedidos ni acceder al sistema.
-          </div>
-        ) : null}
-      </div>
+          {inactive > 0 ? (
+            <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <UserX className="mr-2 inline h-4 w-4" />
+              Hay repartidores inactivos que no podran recibir pedidos ni acceder al sistema.
+            </div>
+          ) : null}
+        </div>
+      </section>
     </AppShell>
   );
 }

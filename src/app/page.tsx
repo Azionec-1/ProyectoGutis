@@ -10,6 +10,7 @@ export default async function HomePage() {
   return (
     <AppShell
       title="Dashboard"
+      showTopSearch={false}
       description="Resumen operativo del sistema con enfoque actual en el módulo de clientes."
       action={
         <Link href="/clients/new" className="ui-btn-primary">

@@ -31,12 +31,12 @@ export function Pagination({
   const nextPage = Math.min(totalPages, current + 1);
 
   return (
-    <div className="ui-panel flex items-center justify-between px-4 py-3 text-sm">
+    <div className="ui-panel flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <Link
         href={buildHref(pathname, { ...query, page: String(previousPage) })}
-        className={`rounded-lg px-3 py-2 font-medium ${
+        className={`rounded-xl px-3 py-2 font-medium ${
           current === 1
-            ? "pointer-events-none bg-slate-100 text-slate-400"
+            ? "pointer-events-none border border-slate-200 bg-slate-100 text-slate-400"
             : "ui-btn-soft px-3 py-2"
         }`}
       >
@@ -48,9 +48,9 @@ export function Pagination({
       </p>
       <Link
         href={buildHref(pathname, { ...query, page: String(nextPage) })}
-        className={`rounded-lg px-3 py-2 font-medium ${
+        className={`rounded-xl px-3 py-2 font-medium ${
           current === totalPages
-            ? "pointer-events-none bg-slate-100 text-slate-400"
+            ? "pointer-events-none border border-slate-200 bg-slate-100 text-slate-400"
             : "ui-btn-soft px-3 py-2"
         }`}
       >

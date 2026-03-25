@@ -3,14 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Segoe UI", sans-serif;
-  --bg-page: #f6f8fc;
+  --font-sans: "Aptos", "Segoe UI", "Trebuchet MS", sans-serif;
+  --bg-page: #eef3f9;
   --bg-panel: #ffffff;
-  --line-soft: #e2e8f0;
+  --line-soft: #d9e2ee;
   --text-main: #0f172a;
   --text-muted: #64748b;
   --brand-600: #2563eb;
   --brand-700: #1d4ed8;
+  --rail-bg: #10233e;
+  --rail-bg-soft: #163152;
+  --panel-shadow: 0 18px 45px -30px rgba(15, 23, 42, 0.38);
+  --panel-shadow-soft: 0 10px 26px -22px rgba(15, 23, 42, 0.24);
 }
 
 html {
@@ -20,9 +24,11 @@ html {
 body {
   color: var(--text-main);
   background:
-    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.06), transparent 35%),
-    radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(238, 243, 249, 0.94) 100%),
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.08), transparent 32%),
+    radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.06), transparent 26%),
     var(--bg-page);
+  font-family: var(--font-sans);
 }
 
 a {
@@ -35,27 +41,36 @@ a {
 
 @layer components {
   .ui-panel {
-    @apply rounded-[20px] border border-slate-200 bg-white shadow-sm;
+    @apply rounded-2xl border bg-white;
+    border-color: var(--line-soft);
+    box-shadow: var(--panel-shadow-soft);
   }
 
   .ui-subtle-panel {
-    @apply rounded-xl border border-slate-200 bg-slate-50;
+    @apply rounded-xl border bg-slate-50/90;
+    border-color: #dbe4ef;
   }
 
   .ui-input {
-    @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+    @apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10;
+    border-color: #d3dce8;
   }
 
   .ui-select {
-    @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
+    @apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10;
+    border-color: #d3dce8;
   }
 
   .ui-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5;
+    background: linear-gradient(135deg, var(--brand-700), var(--brand-600));
+    box-shadow: 0 14px 28px -18px rgba(37, 99, 235, 0.72);
   }
 
   .ui-btn-soft {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50;
+    border-color: #d3dce8;
+    box-shadow: 0 10px 20px -24px rgba(15, 23, 42, 0.4);
   }
 
   .ui-label {
@@ -63,11 +78,13 @@ a {
   }
 
   .ui-pill {
-    @apply inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+    @apply inline-flex items-center rounded-full border bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500;
+    border-color: #d6dfeb;
   }
 
   .ui-table-wrap {
-    @apply overflow-x-auto rounded-xl border border-slate-200 bg-white;
+    @apply overflow-x-auto rounded-2xl border bg-white;
+    border-color: #d6dfeb;
   }
 
   .ui-table {
@@ -75,11 +92,11 @@ a {
   }
 
   .ui-table thead {
-    @apply bg-slate-50;
+    @apply bg-slate-50/80;
   }
 
   .ui-table th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500;
+    @apply px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500;
   }
 
   .ui-table td {

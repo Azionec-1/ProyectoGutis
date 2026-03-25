@@ -25,8 +25,9 @@ export default async function SalesPage({
 
   return (
     <AppShell
-      title="Gestión de ventas"
-      description="Registra pedidos, asigna repartidor y controla la salida de productos desde un solo flujo."
+      title="Gestion de ventas"
+      showTopSearch={false}
+      description="Registra pedidos, asigna repartidor y controla la salida de productos con una lectura mas ejecutiva del flujo."
       action={
         <Link href="/sales/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
@@ -36,19 +37,20 @@ export default async function SalesPage({
     >
       <SalesStats {...metrics} />
 
-      <div className="ui-panel flex flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between">
+      <div className="ui-panel flex flex-col gap-3 p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Reporte consolidado de ventas</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Consolidado</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">Reporte consolidado de ventas</p>
           <p className="mt-1 text-sm text-slate-500">
-            Esta opción se conectará con exportaciones directas cuando el flujo quede cerrado.
+            Esta opcion se conectara con exportaciones directas cuando el flujo quede cerrado.
           </p>
         </div>
         <button
           type="button"
           disabled
-          className="inline-flex cursor-not-allowed items-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
+          className="inline-flex cursor-not-allowed items-center rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-500"
         >
-          Generar reporte de ventas (En producción)
+          Generar reporte de ventas
         </button>
       </div>
 

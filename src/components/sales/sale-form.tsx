@@ -13,7 +13,7 @@ type FormState = {
 type ItemRow = {
   id: string;
   productId: string;
-  quantity: number;
+  quantityInput: string;
   unitPrice: number;
 };
 
@@ -27,9 +27,18 @@ type ProductOption = {
 const createEmptyItem = (): ItemRow => ({
   id: crypto.randomUUID(),
   productId: "",
-  quantity: 1,
+  quantityInput: "1",
   unitPrice: 0
 });
+
+function getItemQuantity(quantityInput: string) {
+  if (!/^\d+$/.test(quantityInput.trim())) {
+    return 0;
+  }
+
+  const quantity = Number(quantityInput);
+  return Number.isInteger(quantity) && quantity > 0 ? quantity : 0;
+}
 
 export function SaleForm({
   action,
@@ -54,6 +63,20 @@ export function SaleForm({
     [products]
   );
 
+  const reservedByProduct = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    items.forEach((item) => {
+      if (!item.productId) {
+        return;
+      }
+
+      totals.set(item.productId, (totals.get(item.productId) ?? 0) + getItemQuantity(item.quantityInput));
+    });
+
+    return totals;
+  }, [items]);
+
   const normalizedQuery = clientQuery.trim().toLowerCase();
   const filteredClients = normalizedQuery
     ? clients.filter((client) =>
@@ -61,7 +84,7 @@ export function SaleForm({
       )
     : clients.slice(0, 8);
 
-  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const subtotal = items.reduce((sum, item) => sum + getItemQuantity(item.quantityInput) * item.unitPrice, 0);
   const total = Math.max(0, subtotal - discountAmount);
   const selectedItems = items.filter((item) => item.productId);
 
@@ -108,7 +131,7 @@ export function SaleForm({
                     onBlur={() => {
                       setTimeout(() => setShowClientResults(false), 120);
                     }}
-                    placeholder="Escribe nombre, teléfono o código"
+                    placeholder="Escribe nombre, telefono o codigo"
                     className="ui-input pl-10"
                     autoComplete="off"
                     required
@@ -144,14 +167,14 @@ export function SaleForm({
                     </div>
                   ) : (
                     <div className="px-4 py-4 text-sm text-slate-500">
-                      No hay coincidencias. Si continúas, se creará un cliente pendiente con ese nombre.
+                      No hay coincidencias. Si continuas, se creara un cliente pendiente con ese nombre.
                     </div>
                   )}
                 </div>
               ) : null}
 
               <p className="mt-2 text-xs text-slate-500">
-                Si el cliente no existe, escribe el nombre y se creará automáticamente como pendiente.
+                Si el cliente no existe, escribe el nombre y se creara automaticamente como pendiente.
               </p>
             </div>
 
@@ -182,7 +205,7 @@ export function SaleForm({
             </label>
 
             <label className="ui-label">
-              Método de pago
+              Metodo de pago
               <select name="paymentMethod" defaultValue="EFECTIVO" className="ui-select">
                 {PAYMENT_METHOD_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -228,7 +251,7 @@ export function SaleForm({
               <Receipt className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Resumen rápido</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Resumen rapido</h3>
               <p className="mt-1 text-sm text-slate-500">
                 Revisa el pedido antes de guardar la venta.
               </p>
@@ -237,7 +260,7 @@ export function SaleForm({
 
           <div className="mt-6 space-y-3">
             <div className="ui-subtle-panel px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Ítems activos</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Items activos</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{selectedItems.length}</p>
             </div>
 
@@ -256,9 +279,9 @@ export function SaleForm({
           <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-sm font-medium text-slate-800">Consideraciones</p>
             <ul className="mt-2 space-y-2 text-sm text-slate-500">
-              <li>El precio del producto se completa automáticamente.</li>
+              <li>El precio del producto se completa automaticamente.</li>
               <li>La cantidad enviada descuenta stock al registrar la venta.</li>
-              <li>Si cancelas la venta después, el sistema repone el stock.</li>
+              <li>Si cancelas la venta despues, el sistema repone el stock.</li>
             </ul>
           </div>
         </section>
@@ -271,9 +294,9 @@ export function SaleForm({
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Ítems de venta</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Items de venta</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Agrega productos, define cantidades y revisa el total por línea.
+                Agrega productos, define cantidades y revisa el total por linea.
               </p>
             </div>
           </div>
@@ -284,26 +307,33 @@ export function SaleForm({
             className="ui-btn-soft"
           >
             <Plus className="h-4 w-4" />
-            Agregar ítem
+            Agregar item
           </button>
         </div>
 
         <div className="mt-6 space-y-4">
           {items.map((item, index) => {
             const selectedProduct = item.productId ? productsMap.get(item.productId) : null;
+            const quantity = getItemQuantity(item.quantityInput);
+            const reservedForProduct = item.productId ? reservedByProduct.get(item.productId) ?? 0 : 0;
+            const remainingStock = selectedProduct ? Math.max(selectedProduct.stock - reservedForProduct, 0) : 0;
+            const availableForThisRow = selectedProduct
+              ? Math.max(selectedProduct.stock - (reservedForProduct - quantity), 0)
+              : 0;
+            const exceedsAvailable = selectedProduct ? quantity > availableForThisRow : false;
 
             return (
               <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">Ítem {index + 1}</p>
+                    <p className="text-sm font-semibold text-slate-900">Item {index + 1}</p>
                     <p className="text-xs text-slate-500">Selecciona producto, cantidad y revisa su total.</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
                     className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-500 transition hover:bg-slate-100"
-                    aria-label="Eliminar ítem"
+                    aria-label="Eliminar item"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -334,23 +364,48 @@ export function SaleForm({
                         ))}
                       </select>
                     </label>
-                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-slate-500">
+                    <div
+                      className={`mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs ${
+                        exceedsAvailable ? "text-rose-600" : "text-slate-500"
+                      }`}
+                    >
                       <Package className="h-3.5 w-3.5" />
-                      Disponible: <span className="font-semibold text-slate-700">{selectedProduct?.stock ?? 0}</span>
+                      Disponible: <span className="font-semibold text-slate-700">{remainingStock}</span>
                     </div>
+                    {exceedsAvailable ? (
+                      <p className="mt-2 text-xs text-rose-600">
+                        Esta fila supera el stock disponible para {selectedProduct?.name}. Maximo para esta fila:{" "}
+                        {availableForThisRow}.
+                      </p>
+                    ) : null}
                   </div>
 
                   <label className="ui-label">
                     Cantidad
                     <input
-                      name="itemQuantity"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={item.quantity}
-                      onChange={(event) => updateItem(item.id, { quantity: Number(event.target.value) || 1 })}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={item.quantityInput}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+
+                        if (/^\d*$/.test(nextValue)) {
+                          updateItem(item.id, { quantityInput: nextValue });
+                        }
+                      }}
+                      onBlur={() => {
+                        if (getItemQuantity(item.quantityInput) <= 0) {
+                          updateItem(item.id, { quantityInput: "1" });
+                        }
+                      }}
                       className="ui-input"
                       required
+                    />
+                    <input
+                      type="hidden"
+                      name="itemQuantity"
+                      value={quantity > 0 ? String(quantity) : ""}
                     />
                   </label>
 
@@ -368,9 +423,9 @@ export function SaleForm({
                   </label>
 
                   <div className="ui-subtle-panel flex flex-col justify-center px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Total del ítem</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Total del item</p>
                     <p className="mt-2 text-xl font-semibold text-slate-900">
-                      {currency(item.quantity * item.unitPrice)}
+                      {currency(quantity * item.unitPrice)}
                     </p>
                   </div>
                 </div>

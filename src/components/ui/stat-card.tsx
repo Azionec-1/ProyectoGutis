@@ -14,15 +14,17 @@ export function StatCard({
   tone: string;
 }) {
   return (
-    <article className="ui-panel p-5">
-      <header className="mb-3 flex items-center gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}>
+    <article className="ui-panel border-slate-200/90 p-4">
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">{value}</p>
+        </div>
+        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <p className="text-sm text-slate-500">{label}</p>
       </header>
-      <p className="text-3xl font-bold text-slate-900">{value}</p>
-      {hint ? <p className="mt-1 text-sm text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-3 text-sm text-slate-500">{hint}</p> : null}
     </article>
   );
 }

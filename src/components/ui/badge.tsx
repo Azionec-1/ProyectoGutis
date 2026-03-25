@@ -10,10 +10,10 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
+        "inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]",
         active
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-amber-100 text-amber-700"
+          ? "border-blue-100 bg-blue-50 text-blue-700"
+          : "border-amber-100 bg-amber-50 text-amber-700"
       )}
     >
       {children}
