@@ -10,13 +10,12 @@ export default async function NewSalePage() {
   return (
     <AppShell
       title="Nueva venta"
-      description="Registra una venta asociando cliente, repartidor, ítems y método de pago."
+      description="Registra un pedido rápido con lo mínimo necesario y completa el resto después si hace falta."
     >
       <Card>
         <SaleForm
           action={createSaleAction}
           clients={options.clients}
-          workers={options.workers}
           products={options.products}
         />
       </Card>

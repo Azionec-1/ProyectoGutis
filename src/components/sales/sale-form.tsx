@@ -1,9 +1,15 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { ClipboardList, Package, Plus, Receipt, Search, Trash2, Truck, UserRound } from "lucide-react";
-import { PAYMENT_METHOD_OPTIONS, SALE_STATUS_OPTIONS } from "@/lib/data/sale-service";
+import { ClipboardList, Package, Plus, Receipt, Search, Trash2, UserRound } from "lucide-react";
+import { PAYMENT_METHOD_OPTIONS } from "@/lib/data/sale-service";
 import { currency } from "@/lib/utils";
+
+const PAYMENT_STATUS_PAID = "PAGADO";
+const PAYMENT_STATUS_PARTIAL = "PARCIAL";
+const PAYMENT_STATUS_CREDIT = "CREDITO";
+const SALE_OPERATION_SALE = "VENTA";
+const SALE_OPERATION_REFILL = "RECARGA";
 
 type FormState = {
   error?: string;
@@ -43,17 +49,18 @@ function getItemQuantity(quantityInput: string) {
 export function SaleForm({
   action,
   clients,
-  workers,
   products
 }: {
   action: (state: FormState, formData: FormData) => Promise<FormState>;
   clients: Array<{ id: string; code: string; fullName: string; phone: string }>;
-  workers: Array<{ id: string; fullName: string }>;
   products: ProductOption[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [items, setItems] = useState<ItemRow[]>([createEmptyItem()]);
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [operationType, setOperationType] = useState<string>(SALE_OPERATION_SALE);
+  const [paymentStatus, setPaymentStatus] = useState<string>(PAYMENT_STATUS_PAID);
+  const [initialPaidAmountInput, setInitialPaidAmountInput] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [clientQuery, setClientQuery] = useState("");
   const [selectedClientId, setSelectedClientId] = useState("");
   const [showClientResults, setShowClientResults] = useState(false);
@@ -85,7 +92,14 @@ export function SaleForm({
     : clients.slice(0, 8);
 
   const subtotal = items.reduce((sum, item) => sum + getItemQuantity(item.quantityInput) * item.unitPrice, 0);
-  const total = Math.max(0, subtotal - discountAmount);
+  const total = subtotal;
+  const initialPaidAmount =
+    paymentStatus === PAYMENT_STATUS_PAID
+      ? total
+      : paymentStatus === PAYMENT_STATUS_CREDIT
+        ? 0
+        : Number(initialPaidAmountInput || "0");
+  const amountDue = Math.max(0, total - initialPaidAmount);
   const selectedItems = items.filter((item) => item.productId);
 
   function updateItem(id: string, patch: Partial<ItemRow>) {
@@ -107,12 +121,42 @@ export function SaleForm({
             <div>
               <h3 className="text-lg font-semibold text-slate-900">Datos de la venta</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Selecciona cliente, repartidor y condiciones generales del pedido.
+                Registra a quién le vendiste y lo que pidió, sin llenar datos de más.
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <p className="ui-label">Tipo de pedido</p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setOperationType(SALE_OPERATION_SALE)}
+                  className={`rounded-2xl border px-4 py-3 text-left transition ${
+                    operationType === SALE_OPERATION_SALE
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <p className="text-sm font-semibold">Venta</p>
+                  <p className="mt-1 text-xs">Pedido normal con salida regular de productos.</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOperationType(SALE_OPERATION_REFILL)}
+                  className={`rounded-2xl border px-4 py-3 text-left transition ${
+                    operationType === SALE_OPERATION_REFILL
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <p className="text-sm font-semibold">Recarga</p>
+                  <p className="mt-1 text-xs">El cliente ya tiene su bidon y solo se recarga agua.</p>
+                </button>
+              </div>
+            </div>
+
             <div className="md:col-span-2">
               <label className="ui-label" htmlFor="clientSearch">
                 Cliente
@@ -138,7 +182,7 @@ export function SaleForm({
                   />
                 </div>
               </label>
-              <input type="hidden" name="clientId" value={selectedClientId} required />
+              <input type="hidden" name="clientId" value={selectedClientId} />
               <input type="hidden" name="clientDraftName" value={clientQuery.trim()} />
 
               {showClientResults ? (
@@ -179,28 +223,15 @@ export function SaleForm({
             </div>
 
             <label className="ui-label">
-              Repartidor
-              <div className="relative">
-                <Truck className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <select name="workerId" defaultValue="" className="ui-select pl-10" required>
-                  <option value="">Selecciona un repartidor</option>
-                  {workers.map((worker) => (
-                    <option key={worker.id} value={worker.id}>
-                      {worker.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </label>
-
-            <label className="ui-label">
-              Estado
-              <select name="status" defaultValue="PENDIENTE" className="ui-select">
-                {SALE_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+              Tipo de cobro
+              <select
+                value={paymentStatus}
+                onChange={(event) => setPaymentStatus(event.target.value)}
+                className="ui-select"
+              >
+                <option value={PAYMENT_STATUS_PAID}>Pagado</option>
+                <option value={PAYMENT_STATUS_PARTIAL}>Pago parcial</option>
+                <option value={PAYMENT_STATUS_CREDIT}>Crédito</option>
               </select>
             </label>
 
@@ -215,23 +246,32 @@ export function SaleForm({
               </select>
             </label>
 
-            <label className="ui-label">
-              Fecha y hora programada
-              <input name="scheduledAt" type="datetime-local" className="ui-input" required />
-            </label>
+            {paymentStatus === PAYMENT_STATUS_PARTIAL ? (
+              <label className="ui-label">
+                Abono inicial
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={initialPaidAmountInput}
+                  onChange={(event) => setInitialPaidAmountInput(event.target.value)}
+                  className="ui-input"
+                  placeholder="Ej: 20"
+                />
+              </label>
+            ) : null}
 
-            <label className="ui-label">
-              Descuento
-              <input
-                name="discountAmount"
-                type="number"
-                min={0}
-                step="0.01"
-                value={discountAmount}
-                onChange={(event) => setDiscountAmount(Number(event.target.value))}
-                className="ui-input"
-              />
-            </label>
+            {paymentStatus !== PAYMENT_STATUS_PAID ? (
+              <label className="ui-label">
+                Fecha de cancelacion
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                  className="ui-input"
+                />
+              </label>
+            ) : null}
 
             <label className="ui-label md:col-span-2">
               Notas
@@ -243,6 +283,13 @@ export function SaleForm({
               />
             </label>
           </div>
+
+          <input type="hidden" name="status" value="PENDIENTE" />
+          <input type="hidden" name="operationType" value={operationType} />
+          <input type="hidden" name="paymentStatus" value={paymentStatus} />
+          <input type="hidden" name="initialPaidAmount" value={String(initialPaidAmount)} />
+          <input type="hidden" name="dueDate" value={dueDate} />
+          <input type="hidden" name="discountAmount" value="0" />
         </section>
 
         <section className="ui-panel p-6">
@@ -251,9 +298,9 @@ export function SaleForm({
               <Receipt className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">Resumen rapido</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Resumen rápido</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Revisa el pedido antes de guardar la venta.
+                Registra el pedido en pocos segundos y completa lo demás después si hace falta.
               </p>
             </div>
           </div>
@@ -265,6 +312,13 @@ export function SaleForm({
             </div>
 
             <div className="ui-subtle-panel px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Operación</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">
+                {operationType === SALE_OPERATION_REFILL ? "Recarga" : "Venta"}
+              </p>
+            </div>
+
+            <div className="ui-subtle-panel px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Subtotal</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{currency(subtotal)}</p>
             </div>
@@ -272,16 +326,25 @@ export function SaleForm({
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Total final</p>
               <p className="mt-2 text-3xl font-semibold text-slate-900">{currency(total)}</p>
-              <p className="mt-1 text-sm text-slate-500">Incluye el descuento aplicado en esta venta.</p>
+              <p className="mt-1 text-sm text-slate-500">Calculado automaticamente con los items del pedido.</p>
+            </div>
+
+            <div className="ui-subtle-panel px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Saldo pendiente</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">{currency(amountDue)}</p>
             </div>
           </div>
 
           <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4">
-            <p className="text-sm font-medium text-slate-800">Consideraciones</p>
+            <p className="text-sm font-medium text-slate-800">Venta rapida</p>
             <ul className="mt-2 space-y-2 text-sm text-slate-500">
-              <li>El precio del producto se completa automaticamente.</li>
-              <li>La cantidad enviada descuenta stock al registrar la venta.</li>
-              <li>Si cancelas la venta despues, el sistema repone el stock.</li>
+              <li>Si el cliente ya existe, la compra queda en su historial.</li>
+              <li>Si no existe, el sistema lo crea como cliente pendiente automaticamente.</li>
+              <li>
+                {operationType === SALE_OPERATION_REFILL
+                  ? "La recarga se registra como agua entregada sin mover botellón adicional."
+                  : "Puedes asignar repartidor y completar datos más tarde."}
+              </li>
             </ul>
           </div>
         </section>
@@ -452,7 +515,7 @@ export function SaleForm({
         <div>
           <p className="text-sm font-semibold text-slate-900">Venta lista para registrar</p>
           <p className="mt-1 text-sm text-slate-500">
-            Guarda la venta cuando hayas revisado cliente, repartidor y productos.
+            Guarda el pedido con lo minimo necesario. El resto se puede completar despues.
           </p>
         </div>
         <button type="submit" disabled={pending} className="ui-btn-primary min-w-44">

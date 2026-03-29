@@ -3,15 +3,26 @@ import { prisma } from "@/lib/prisma";
 import { isMissingTableError } from "@/lib/prisma-errors";
 import { saleSchema, type SaleFormValues } from "@/lib/validation/sale";
 
+const PAYMENT_STATUS_PAID = "PAGADO";
+const PAYMENT_STATUS_PARTIAL = "PARCIAL";
+const PAYMENT_STATUS_CREDIT = "CREDITO";
+const SALE_OPERATION_REFILL = "RECARGA";
+
 const saleSelect = {
   id: true,
   status: true,
+  operationType: true,
   paymentMethod: true,
+  paymentStatus: true,
   scheduledAt: true,
   deliveredAt: true,
+  dueDate: true,
+  settledAt: true,
   discountAmount: true,
   subtotalAmount: true,
   totalAmount: true,
+  amountPaid: true,
+  amountDue: true,
   notes: true,
   createdAt: true,
 
@@ -47,6 +58,17 @@ const saleSelect = {
       }
     },
     orderBy: { createdAt: "asc" }
+  },
+
+  payments: {
+    select: {
+      id: true,
+      amount: true,
+      paymentMethod: true,
+      paidAt: true,
+      note: true
+    },
+    orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }]
   },
 
   inventoryMovements: {
@@ -118,7 +140,7 @@ export async function getSaleById(id: string) {
 }
 
 export async function getSalesMetrics() {
-  const [total, pending, shipped, canceled, totals] = await Promise.all([
+  const [total, pending, shipped, canceled, totals, paidTotals, dueTotals, creditCount] = await Promise.all([
     prisma.sale.count(),
     prisma.sale.count({ where: { status: SaleStatus.PENDIENTE } }),
     prisma.sale.count({ where: { status: SaleStatus.ENVIADO } }),
@@ -126,6 +148,23 @@ export async function getSalesMetrics() {
     prisma.sale.aggregate({
       _sum: {
         totalAmount: true
+      }
+    }),
+    prisma.sale.aggregate({
+      _sum: {
+        amountPaid: true
+      }
+    }),
+    prisma.sale.aggregate({
+      _sum: {
+        amountDue: true
+      }
+    }),
+    prisma.sale.count({
+      where: {
+        paymentStatus: {
+          in: [PAYMENT_STATUS_CREDIT, PAYMENT_STATUS_PARTIAL]
+        }
       }
     })
   ]);
@@ -135,13 +174,100 @@ export async function getSalesMetrics() {
     pending,
     shipped,
     canceled,
-    revenue: Number(totals._sum.totalAmount ?? 0)
+    revenue: Number(totals._sum.totalAmount ?? 0),
+    collected: Number(paidTotals._sum.amountPaid ?? 0),
+    due: Number(dueTotals._sum.amountDue ?? 0),
+    creditCount
+  };
+}
+
+export async function listCreditSales({
+  search,
+  page = 1,
+  pageSize = 8
+}: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const safePage = Math.max(1, page);
+  const take = Math.max(1, pageSize);
+  const skip = (safePage - 1) * take;
+
+  const where: Prisma.SaleWhereInput = {
+    AND: [
+      {
+        paymentStatus: {
+          in: [PAYMENT_STATUS_CREDIT, PAYMENT_STATUS_PARTIAL]
+        }
+      },
+      search
+        ? {
+            OR: [
+              { client: { fullName: { contains: search } } },
+              { client: { code: { contains: search } } },
+              { client: { district: { contains: search } } }
+            ]
+          }
+        : {}
+    ]
+  };
+
+  const [total, items] = await Promise.all([
+    prisma.sale.count({ where }),
+    prisma.sale.findMany({
+      where,
+      select: saleSelect,
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+      skip,
+      take
+    })
+  ]);
+
+  return {
+    items,
+    total,
+    page: safePage,
+    totalPages: Math.max(1, Math.ceil(total / take))
+  };
+}
+
+export async function getCreditMetrics() {
+  const [openCredits, dueTotals, collectedTotals] = await Promise.all([
+    prisma.sale.count({
+      where: {
+        paymentStatus: {
+          in: [PAYMENT_STATUS_CREDIT, PAYMENT_STATUS_PARTIAL]
+        }
+      }
+    }),
+    prisma.sale.aggregate({
+      where: {
+        paymentStatus: {
+          in: [PAYMENT_STATUS_CREDIT, PAYMENT_STATUS_PARTIAL]
+        }
+      },
+      _sum: {
+        amountDue: true
+      }
+    }),
+    prisma.salePayment.aggregate({
+      _sum: {
+        amount: true
+      }
+    })
+  ]);
+
+  return {
+    openCredits,
+    amountDue: Number(dueTotals._sum.amountDue ?? 0),
+    amountCollected: Number(collectedTotals._sum.amount ?? 0)
   };
 }
 
 export async function getSaleFormOptions() {
   try {
-    const [clients, workers, products] = await Promise.all([
+    const [clients, products] = await Promise.all([
       prisma.client.findMany({
         where: { isActive: true },
         orderBy: { fullName: "asc" },
@@ -150,15 +276,6 @@ export async function getSaleFormOptions() {
           code: true,
           fullName: true,
           phone: true
-        }
-      }),
-
-      prisma.worker.findMany({
-        where: { isActive: true },
-        orderBy: { fullName: "asc" },
-        select: {
-          id: true,
-          fullName: true
         }
       }),
 
@@ -175,7 +292,6 @@ export async function getSaleFormOptions() {
 
     return {
       clients,
-      workers,
       products: products.map((product) => ({
         ...product,
         price: Number(product.price)
@@ -183,7 +299,7 @@ export async function getSaleFormOptions() {
     };
   } catch (error) {
     if (isMissingTableError(error)) {
-      return { clients: [], workers: [], products: [] };
+      return { clients: [], products: [] };
     }
 
     throw error;
@@ -248,17 +364,31 @@ export async function createSale(input: SaleFormValues) {
 
     const subtotal = normalizedItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const total = subtotal - parsed.discountAmount;
+    const amountPaid = parsed.paymentStatus === PAYMENT_STATUS_PAID ? total : parsed.initialPaidAmount;
+    const amountDue = Math.max(0, total - amountPaid);
+    const resolvedPaymentStatus =
+      amountDue === 0
+        ? PAYMENT_STATUS_PAID
+        : amountPaid > 0
+          ? PAYMENT_STATUS_PARTIAL
+          : PAYMENT_STATUS_CREDIT;
 
     const sale = await tx.sale.create({
       data: {
         clientId: parsed.clientId,
         workerId: parsed.workerId,
         status: parsed.status,
+        operationType: parsed.operationType,
         paymentMethod: parsed.paymentMethod,
         scheduledAt: parsed.scheduledAt,
+        dueDate: amountDue > 0 ? parsed.dueDate ?? null : null,
+        settledAt: amountDue === 0 ? new Date() : null,
+        paymentStatus: resolvedPaymentStatus,
         discountAmount: parsed.discountAmount,
         subtotalAmount: subtotal,
         totalAmount: total,
+        amountPaid,
+        amountDue,
         notes: parsed.notes || null
       }
     });
@@ -272,6 +402,23 @@ export async function createSale(input: SaleFormValues) {
         totalPrice: item.totalPrice
       }))
     });
+
+    if (amountPaid > 0) {
+      await tx.salePayment.create({
+        data: {
+          saleId: sale.id,
+          clientId: parsed.clientId,
+          workerId: parsed.workerId,
+          amount: amountPaid,
+          paymentMethod: parsed.paymentMethod,
+          paidAt: parsed.scheduledAt,
+          note:
+            resolvedPaymentStatus === PAYMENT_STATUS_PAID
+              ? "Pago completo registrado con la venta."
+              : "Pago inicial registrado con la venta."
+        }
+      });
+    }
 
     if (parsed.status !== SaleStatus.CANCELADO) {
       for (const item of normalizedItems) {
@@ -288,7 +435,10 @@ export async function createSale(input: SaleFormValues) {
           data: {
             movementType: MovementType.SALIDA_VENTA,
             quantity: item.quantity,
-            note: `Salida por venta - ${item.productName}`,
+            note:
+              parsed.operationType === SALE_OPERATION_REFILL
+                ? `Salida por recarga - ${item.productName}`
+                : `Salida por venta - ${item.productName}`,
             happenedAt: parsed.scheduledAt,
             clientId: parsed.clientId,
             workerId: parsed.workerId,
@@ -299,6 +449,88 @@ export async function createSale(input: SaleFormValues) {
     }
 
     return sale;
+  });
+}
+
+export async function registerSalePayment({
+  saleId,
+  amount,
+  paymentMethod,
+  paidAt,
+  note
+}: {
+  saleId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paidAt: Date;
+  note?: string;
+}) {
+  if (!saleId) {
+    throw new Error("La venta no existe.");
+  }
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("El abono debe ser mayor a cero.");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const sale = await tx.sale.findUnique({
+      where: { id: saleId },
+      select: {
+        id: true,
+        clientId: true,
+        workerId: true,
+        paymentStatus: true,
+        amountPaid: true,
+        amountDue: true,
+        totalAmount: true
+      }
+    });
+
+    if (!sale) {
+      throw new Error("La venta no existe.");
+    }
+
+    const currentDue = Number(sale.amountDue);
+
+    if (currentDue <= 0) {
+      throw new Error("Esta venta ya no tiene saldo pendiente.");
+    }
+
+    if (amount > currentDue) {
+      throw new Error(`El abono supera el saldo pendiente de ${currentDue}.`);
+    }
+
+    await tx.salePayment.create({
+      data: {
+        saleId: sale.id,
+        clientId: sale.clientId,
+        workerId: sale.workerId,
+        amount,
+        paymentMethod,
+        paidAt,
+        note: note || null
+      }
+    });
+
+    const nextPaid = Number(sale.amountPaid) + amount;
+    const nextDue = Math.max(0, Number(sale.totalAmount) - nextPaid);
+
+    return tx.sale.update({
+      where: { id: sale.id },
+      data: {
+        amountPaid: nextPaid,
+        amountDue: nextDue,
+        paymentMethod,
+        paymentStatus:
+          nextDue === 0
+            ? PAYMENT_STATUS_PAID
+            : nextPaid > 0
+              ? PAYMENT_STATUS_PARTIAL
+              : PAYMENT_STATUS_CREDIT,
+        settledAt: nextDue === 0 ? paidAt : null
+      }
+    });
   });
 }
 

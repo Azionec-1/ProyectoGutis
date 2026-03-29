@@ -43,7 +43,7 @@ export function DashboardOverview({
 
   const alerts = [
     { message: "Ventas y movimientos aun no muestran datos historicos completos.", type: "warning" },
-    { message: "El tablero prioriza clientes mientras terminamos de conectar operacion y produccion.", type: "info" },
+    { message: "El tablero prioriza clientes mientras terminamos de conectar operación y producción.", type: "info" },
     { message: "Los bloques marcados como vista previa ya estan listos para una segunda fase visual.", type: "info" }
   ];
 
@@ -102,7 +102,7 @@ export function DashboardOverview({
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Vista previa</p>
             <h3 className="mt-2 text-lg font-semibold text-slate-900">Ventas semanales</h3>
             <div className="mt-4 flex h-[180px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
-              En produccion
+              En producción
             </div>
           </div>
 

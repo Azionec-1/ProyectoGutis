@@ -41,6 +41,7 @@ model Client {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   sales           Sale[]
+  salePayments    SalePayment[]
   inventoryEvents InventoryMovement[]
 }
 
@@ -54,6 +55,7 @@ model Worker {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   sales           Sale[]
+  salePayments    SalePayment[]
   inventoryEvents InventoryMovement[]
   user            User?
 }
@@ -63,19 +65,45 @@ model Sale {
   clientId           String
   workerId           String?
   status             SaleStatus          @default(PENDIENTE)
+  operationType      SaleOperationType   @default(VENTA)
   paymentMethod      PaymentMethod
+  paymentStatus      PaymentStatus       @default(PAGADO)
   scheduledAt        DateTime
   deliveredAt        DateTime?
+  dueDate            DateTime?
+  settledAt          DateTime?
   discountAmount     Decimal             @default(0)
   subtotalAmount     Decimal
   totalAmount        Decimal
+  amountPaid         Decimal             @default(0)
+  amountDue          Decimal             @default(0)
   notes              String?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   client             Client              @relation(fields: [clientId], references: [id])
   worker             Worker?             @relation(fields: [workerId], references: [id])
   items              SaleItem[]
+  payments           SalePayment[]
   inventoryMovements InventoryMovement[]
+}
+
+model SalePayment {
+  id            String        @id @default(cuid())
+  saleId        String
+  clientId      String
+  workerId      String?
+  amount        Decimal
+  paymentMethod PaymentMethod
+  paidAt        DateTime
+  note          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  client        Client        @relation(fields: [clientId], references: [id])
+  worker        Worker?       @relation(fields: [workerId], references: [id])
+
+  @@index([saleId, paidAt])
+  @@index([clientId, paidAt])
 }
 
 model SaleItem {
@@ -118,6 +146,36 @@ model Product {
   productionLogs ProductionLog[]
 }
 
+model InventorySupply {
+  id                         String                    @id @default(cuid())
+  name                       String                    @unique
+  unitLabel                  String                    @default("unidades")
+  stock                      Decimal                   @default(0)
+  packageSize                Decimal?
+  productionConsumptionRate  Decimal                   @default(0)
+  lowStockAlert              Decimal                   @default(0)
+  isActive                   Boolean                   @default(true)
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  movements                  InventorySupplyMovement[]
+}
+
+model InventorySupplyMovement {
+  id           String                      @id @default(cuid())
+  supplyId     String
+  movementType InventorySupplyMovementType
+  quantity     Decimal
+  stockAfter   Decimal
+  note         String?
+  happenedAt   DateTime
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+  supply       InventorySupply             @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+
+  @@index([supplyId, happenedAt])
+  @@index([movementType, happenedAt])
+}
+
 model ProductionLog {
   id                   String   @id @default(cuid())
   productId            String
@@ -146,11 +204,30 @@ enum PaymentMethod {
   CARD
 }
 
+enum PaymentStatus {
+  PAGADO
+  PARCIAL
+  CREDITO
+}
+
+enum SaleOperationType {
+  VENTA
+  RECARGA
+}
+
 enum MovementType {
   INGRESO_PRODUCCION
   SALIDA_VENTA
   SALIDA_PRESTAMO
   DEVOLUCION_ENTRADA
+  AJUSTE
+}
+
+enum InventorySupplyMovementType {
+  INGRESO
+  SALIDA
+  CONSUMO_PRODUCCION
+  REPOSICION_PRODUCCION
   AJUSTE
 }
 

@@ -32,12 +32,12 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Error al iniciar sesion.");
+        throw new Error(data.error || "Error al iniciar sesión.");
       }
 
       router.push(data.user?.role === "WORKER" ? "/my-orders" : from);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "No se pudo iniciar sesion.");
+      setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");
     } finally {
       setLoading(false);
     }
@@ -61,7 +61,7 @@ export default function LoginPage() {
       <main className="relative z-10 flex items-center justify-center px-4 py-10 md:justify-end md:px-10 lg:px-16">
         <div className="w-full max-w-md">
           <div className="rounded-3xl border border-white/70 bg-white/58 p-6 shadow-2xl backdrop-blur-md">
-            <h1 className="mb-1 text-center text-2xl font-semibold text-slate-900">Inicio de sesion</h1>
+            <h1 className="mb-1 text-center text-2xl font-semibold text-slate-900">Inicio de sesión</h1>
             <p className="mb-6 text-center text-sm text-slate-600">Accede para continuar</p>
 
             {error ? (
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full rounded-lg bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 font-medium text-white shadow hover:from-sky-400 hover:to-blue-500 disabled:opacity-60"
               >
-                {loading ? "Entrando..." : "Iniciar sesion"}
+                {loading ? "Entrando..." : "Iniciar sesión"}
               </button>
 
               <p className="text-center text-sm text-slate-600">

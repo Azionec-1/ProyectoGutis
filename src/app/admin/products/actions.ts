@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import {
+  consumeInventoryForProduction,
+  ensureDefaultInventorySupplies,
+  restoreInventoryFromProductionRevert
+} from "@/lib/data/inventory-service";
 
 function startOfToday() {
   const today = new Date();
@@ -11,6 +16,7 @@ function startOfToday() {
 
 function revalidateProductsAndReports() {
   revalidatePath("/admin/products");
+  revalidatePath("/inventory");
   revalidatePath("/reports");
 }
 
@@ -25,6 +31,8 @@ export async function registerDailyProductionAction(formData: FormData) {
   const producedOn = startOfToday();
 
   await prisma.$transaction(async (tx) => {
+    await ensureDefaultInventorySupplies(tx);
+
     await tx.product.update({
       where: { id: productId },
       data: {
@@ -54,6 +62,13 @@ export async function registerDailyProductionAction(formData: FormData) {
         producedOn
       }
     });
+
+    await consumeInventoryForProduction(
+      tx,
+      quantity,
+      `Consumo automatico por produccion del producto ${productId}`,
+      new Date()
+    );
   });
 
   revalidateProductsAndReports();
@@ -69,6 +84,8 @@ export async function revertLastProductionAction(formData: FormData) {
   const producedOn = startOfToday();
 
   await prisma.$transaction(async (tx) => {
+    await ensureDefaultInventorySupplies(tx);
+
     const productionLog = await tx.productionLog.findUnique({
       where: {
         productId_producedOn: {
@@ -92,6 +109,13 @@ export async function revertLastProductionAction(formData: FormData) {
         }
       }
     });
+
+    await restoreInventoryFromProductionRevert(
+      tx,
+      revertAmount,
+      `Reposicion automatica por revertir produccion del producto ${productId}`,
+      new Date()
+    );
 
     if (productionLog.quantity - revertAmount <= 0) {
       await tx.productionLog.delete({

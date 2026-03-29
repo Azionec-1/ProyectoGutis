@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { findOrCreateQuickClient } from "@/lib/data/client-service";
-import { createSale, updateSaleStatus } from "@/lib/data/sale-service";
+import { createSale, registerSalePayment, updateSaleStatus } from "@/lib/data/sale-service";
+
+const PAYMENT_STATUS_PAID = "PAGADO";
 
 type ActionState = {
   error?: string;
@@ -14,12 +16,8 @@ type ActionState = {
 
 function readItems(formData: FormData) {
   const productIds = formData.getAll("productId").map((value) => String(value ?? "").trim());
-  const quantities = formData
-    .getAll("itemQuantity")
-    .map((value) => Number(String(value ?? "0")));
-  const prices = formData
-    .getAll("itemUnitPrice")
-    .map((value) => Number(String(value ?? "0")));
+  const quantities = formData.getAll("itemQuantity").map((value) => Number(String(value ?? "0")));
+  const prices = formData.getAll("itemUnitPrice").map((value) => Number(String(value ?? "0")));
 
   return productIds
     .map((productId, index) => ({
@@ -34,7 +32,16 @@ function parseDateTimeLocal(value: string) {
   if (!value) {
     return new Date();
   }
+
   return new Date(value);
+}
+
+function parseDate(value: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  return new Date(`${value}T00:00:00`);
 }
 
 export async function createSaleAction(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -53,13 +60,15 @@ export async function createSaleAction(_: ActionState, formData: FormData): Prom
 
     await createSale({
       clientId,
-      workerId: String(formData.get("workerId") ?? ""),
+      workerId: String(formData.get("workerId") ?? "").trim() || undefined,
       status: String(formData.get("status") ?? SaleStatus.PENDIENTE) as SaleStatus,
-      paymentMethod: String(
-        formData.get("paymentMethod") ?? PaymentMethod.EFECTIVO
-      ) as PaymentMethod,
+      operationType: String(formData.get("operationType") ?? "VENTA") as "VENTA" | "RECARGA",
+      paymentStatus: String(formData.get("paymentStatus") ?? PAYMENT_STATUS_PAID) as "PAGADO" | "PARCIAL" | "CREDITO",
+      paymentMethod: String(formData.get("paymentMethod") ?? PaymentMethod.EFECTIVO) as PaymentMethod,
       scheduledAt: parseDateTimeLocal(String(formData.get("scheduledAt") ?? "")),
+      dueDate: parseDate(String(formData.get("dueDate") ?? "")),
       discountAmount: Number(String(formData.get("discountAmount") ?? "0")),
+      initialPaidAmount: Number(String(formData.get("initialPaidAmount") ?? "0")),
       notes: String(formData.get("notes") ?? "") || undefined,
       items: readItems(formData)
     });
@@ -72,7 +81,7 @@ export async function createSaleAction(_: ActionState, formData: FormData): Prom
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return { error: "No se pudo guardar la venta por una restricción de datos." };
+      return { error: "No se pudo guardar la venta por una restriccion de datos." };
     }
 
     if (error instanceof Error) {
@@ -87,6 +96,30 @@ export async function createSaleAction(_: ActionState, formData: FormData): Prom
   revalidatePath("/clients");
   revalidatePath("/");
   redirect("/sales");
+}
+
+export async function registerSalePaymentAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await registerSalePayment({
+      saleId: String(formData.get("saleId") ?? ""),
+      amount: Number(String(formData.get("amount") ?? "0")),
+      paymentMethod: String(formData.get("paymentMethod") ?? PaymentMethod.EFECTIVO) as PaymentMethod,
+      paidAt: parseDateTimeLocal(String(formData.get("paidAt") ?? "")),
+      note: String(formData.get("note") ?? "") || undefined
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+
+    return { error: "No se pudo registrar el abono." };
+  }
+
+  const saleId = String(formData.get("saleId") ?? "");
+  revalidatePath("/sales");
+  revalidatePath(`/sales/${saleId}`);
+  revalidatePath("/reports");
+  return {};
 }
 
 export async function updateSaleStatusAction(formData: FormData) {

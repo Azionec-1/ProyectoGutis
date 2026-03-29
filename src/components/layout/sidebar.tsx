@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { UserRole } from "@prisma/client";
-import { BarChart, Building2, LayoutGrid, LogOut, Package, Route, Truck, Users } from "lucide-react";
+import { BarChart, Building2, CreditCard, LayoutGrid, LogOut, Package, Route, Truck, Users, Warehouse } from "lucide-react";
 
 const adminItems = [
   { href: "/", label: "Inicio", icon: LayoutGrid },
@@ -13,7 +13,9 @@ const adminItems = [
   { href: "/workers", label: "Equipo", icon: Truck },
   { href: "/sales", label: "Ventas", icon: Building2 },
   { href: "/admin/products", label: "Productos", icon: Package },
-  { href: "/reports", label: "Reportes", icon: BarChart }
+  { href: "/inventory", label: "Inventario", icon: Warehouse },
+  { href: "/reports", label: "Reportes", icon: BarChart },
+  { href: "/credits", label: "Créditos", icon: CreditCard }
 ];
 
 const workerItems = [{ href: "/my-orders", label: "Pedidos", icon: Route }];
@@ -76,9 +78,7 @@ export function Sidebar({
 
   const isWorker = currentUser?.role === "WORKER" || pathname.startsWith("/my-orders");
   const items = isWorker ? workerItems : adminItems;
-  const displayName = isWorker
-    ? currentUser?.worker?.fullName ?? currentUser?.name ?? "Repartidor"
-    : null;
+  const displayName = isWorker ? currentUser?.worker?.fullName ?? currentUser?.name ?? "Repartidor" : null;
 
   async function handleLogout() {
     try {
@@ -134,16 +134,6 @@ export function Sidebar({
           );
         })}
       </nav>
-
-      {!isWorker ? (
-        <div className="mt-5 rounded-2xl border border-white/10 bg-white/6 px-2 py-3 text-center text-[11px] text-white/72 md:block">
-          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-blue-100">
-            <Route className="h-4 w-4" />
-          </div>
-          <p className="mt-2 uppercase tracking-[0.18em]">Créditos</p>
-          <p className="mt-1 text-[10px] text-white/50">Próximo</p>
-        </div>
-      ) : null}
 
       <div className="mt-5 border-t border-white/10 pt-3 md:mt-auto">
         <button

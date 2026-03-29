@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, ChevronRight, CreditCard, MapPin, Package2 } from "lucide-react";
+import { CalendarDays, ChevronRight, CreditCard, Landmark, MapPin, Package2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { updateSaleStatusAction } from "@/app/sales/actions";
 import { SaleStatusSelect } from "@/components/sales/sale-status-select";
@@ -7,6 +7,23 @@ import { currency, shortDate } from "@/lib/utils";
 
 type SaleRow =
   Awaited<ReturnType<typeof import("@/lib/data/sale-service").listSalesPaginated>>["items"][number];
+
+function operationLabel(value: string) {
+  return value === "RECARGA" ? "Recarga" : "Venta";
+}
+
+function paymentStatusLabel(value: string) {
+  switch (value) {
+    case "PAGADO":
+      return "Pagado";
+    case "PARCIAL":
+      return "Parcial";
+    case "CREDITO":
+      return "Crédito";
+    default:
+      return value;
+  }
+}
 
 export function SalesGrid({ sales }: { sales: SaleRow[] }) {
   return (
@@ -25,9 +42,12 @@ export function SalesGrid({ sales }: { sales: SaleRow[] }) {
                     <MapPin className="h-4 w-4" />
                     {sale.client.district}
                   </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                    {operationLabel(sale.operationType)}
+                  </span>
                   <span className="inline-flex items-center gap-2">
                     <Package2 className="h-4 w-4" />
-                    {sale.items.length} ítems
+                    {sale.items.length} items
                   </span>
                 </div>
               </div>
@@ -45,7 +65,7 @@ export function SalesGrid({ sales }: { sales: SaleRow[] }) {
           </div>
 
           <div className="grid gap-5 px-5 py-5 xl:grid-cols-[1fr_auto] xl:items-end">
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-4">
               <div className="ui-subtle-panel px-4 py-3">
                 <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                   <CalendarDays className="h-3.5 w-3.5" />
@@ -57,14 +77,23 @@ export function SalesGrid({ sales }: { sales: SaleRow[] }) {
               <div className="ui-subtle-panel px-4 py-3">
                 <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                   <CreditCard className="h-3.5 w-3.5" />
-                  Pago
+                  Cobro
                 </p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{sale.paymentMethod}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{paymentStatusLabel(sale.paymentStatus)}</p>
+                <p className="mt-1 text-xs text-slate-500">{sale.paymentMethod}</p>
               </div>
 
               <div className="ui-subtle-panel px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Cliente</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{sale.client.phone}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Cobrado</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{currency(Number(sale.amountPaid))}</p>
+              </div>
+
+              <div className="ui-subtle-panel px-4 py-3">
+                <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <Landmark className="h-3.5 w-3.5" />
+                  Saldo
+                </p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{currency(Number(sale.amountDue))}</p>
               </div>
             </div>
 

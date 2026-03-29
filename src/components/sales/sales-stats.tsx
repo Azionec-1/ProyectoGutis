@@ -1,4 +1,4 @@
-import { ShoppingCart, Clock3, Truck, Ban } from "lucide-react";
+import { ShoppingCart, Clock3, Truck, Ban, Wallet, HandCoins, Landmark } from "lucide-react";
 import { StatCard } from "@/components/ui/stat-card";
 import { currency } from "@/lib/utils";
 
@@ -7,13 +7,19 @@ export function SalesStats({
   pending,
   shipped,
   canceled,
-  revenue
+  revenue,
+  collected,
+  due,
+  creditCount
 }: {
   total: number;
   pending: number;
   shipped: number;
   canceled: number;
   revenue: number;
+  collected: number;
+  due: number;
+  creditCount: number;
 }) {
   const cards = [
     {
@@ -56,9 +62,28 @@ export function SalesStats({
         ))}
       </div>
 
-      <div className="ui-panel p-4 text-sm text-slate-600">
-        Ingreso acumulado registrado:{" "}
-        <span className="font-semibold text-slate-900">{currency(revenue)}</span>
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Vendido"
+          value={currency(revenue)}
+          hint="Valor total de ventas registradas"
+          icon={Wallet}
+          tone="bg-sky-100 text-sky-700"
+        />
+        <StatCard
+          label="Cobrado"
+          value={currency(collected)}
+          hint={`${creditCount} ventas con saldo`}
+          icon={HandCoins}
+          tone="bg-green-100 text-green-700"
+        />
+        <StatCard
+          label="Saldo pendiente"
+          value={currency(due)}
+          hint="Cuentas por cobrar activas"
+          icon={Landmark}
+          tone="bg-orange-100 text-orange-700"
+        />
       </div>
     </div>
   );

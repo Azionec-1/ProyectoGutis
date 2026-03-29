@@ -27,7 +27,7 @@ export default async function SalesPage({
     <AppShell
       title="Gestion de ventas"
       showTopSearch={false}
-      description="Registra pedidos, asigna repartidor y controla la salida de productos con una lectura mas ejecutiva del flujo."
+      description="Registra pedidos, asigna repartidor y controla la salida de productos con una lectura más ejecutiva del flujo."
       action={
         <Link href="/sales/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />

@@ -25,7 +25,7 @@ export default async function ClientsPage({
     <AppShell
       title="Gestion de clientes"
       showTopSearch={false}
-      description="Base centralizada de clientes con contacto, direccion y geolocalizacion en un panel mas limpio y rapido de leer."
+      description="Base centralizada de clientes con contacto, dirección y geolocalización en un panel más limpio y rápido de leer."
       action={
         <Link href="/clients/new" className="ui-btn-primary">
           <Plus className="h-4 w-4" />
