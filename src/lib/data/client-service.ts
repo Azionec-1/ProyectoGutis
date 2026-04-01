@@ -26,10 +26,10 @@ const clientSelect = {
 
 async function hasClientTable() {
   try {
-    const result = await prisma.$queryRaw<Array<{ name: string }>>`
-      SELECT name FROM sqlite_master WHERE type='table' AND name='Client'
-    `;
-    return result.length > 0;
+    await prisma.client.findFirst({
+      select: { id: true }
+    });
+    return true;
   } catch {
     return false;
   }
